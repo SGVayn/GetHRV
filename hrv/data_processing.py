@@ -67,6 +67,7 @@ def hrv_generator(measures, signal, sampling_rate=100):
         ppg_clean = nk.ppg_clean(signal, sampling_rate=sampling_rate)
         # print(ppg_clean)
         working_data, measures = hp.process(ppg_clean, sampling_rate, calc_freq=True)
+
     return working_data, measures
 
 
