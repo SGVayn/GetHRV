@@ -6,6 +6,11 @@ import json
 def add_args(a, b):
     return a + b
 
+def index(request):
+   # global ppg, ppg_data, measures
+   # sampling_rate, ppg, ppg_data = get_ppg(100, ppg_data)
+   # working_data, measures = hrv_generator(measures, ppg, sampling_rate)
+   return HttpResponse("hello HRV")
 
 # 接口函数
 def post(request):

@@ -15,7 +15,7 @@ from pathlib import Path
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-
+#csv
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/dev/howto/deployment/checklist/
 
@@ -25,7 +25,7 @@ SECRET_KEY = "django-insecure-=s$o2o@%ii$$^@uq9*8%yb28zu0#m9mjs3g^_q6%b6*%oy0^cw
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['192.168.10.102', 'localhost', '127.0.0.1', '0.0.0.0', '192.168.0.108', '192.168.0.102', '10.48.38.224', "192.168.1.54", "192.168.1.80"]
+ALLOWED_HOSTS = ['192.168.10.102', 'localhost', '127.0.0.1', '0.0.0.0', '192.168.0.108', '192.168.0.102', '10.48.38.224', "192.168.1.54", "192.168.1.80", "172.20.10.8", "172.20.10.2"]
 
 
 # Application definition

@@ -25,13 +25,13 @@ def enqueue(data_queue, data):
         data = json.loads(data)
     data_dict = {"time": data["time"], "event": data["total_event"], "ts": data["time_stamp"],
             "ppg": data["data1"]}
+    #生成数据结构
     # print(data['data1'])
     queue = data_queue
     # if len(queue):
     #     queue.popleft()
     queue.append(data_dict)
     return queue
-
 
 def get_ppg(data_queue, window_size, data_freq=100):
     sampling_rate = 100
@@ -59,17 +59,16 @@ def insert(data):
     ppg.save()
 
 
-def hrv_generator(measures, signal, sampling_rate=100):
+def hrv_generator(data, raw_ppg, sampling_rate=100):
     print(sampling_rate)
     working_data = -1
-    measures = measures
-    if len(signal):
-        ppg_clean = nk.ppg_clean(signal, sampling_rate=sampling_rate)
+    measures = data
+    if len(raw_ppg):
+        ppg_clean = nk.ppg_clean(raw_ppg, sampling_rate=sampling_rate)
         # print(ppg_clean)
         working_data, measures = hp.process(ppg_clean, sampling_rate, calc_freq=True)
 
     return working_data, measures
-
 
 if __name__ == "__main__":
     test_data = {"total_event": 36, "sensor_type": "com.google.wear.sensor.ppg", "time": "2022-07-24T21:40:04.253",
@@ -79,3 +78,7 @@ if __name__ == "__main__":
     data_queue = deque()
     data_queue = enqueue(test_data, data_queue)
     print(data_queue)
+
+
+    #看能不能把np.save() 能不能存进sqlite
+    #test data不等于输出的
