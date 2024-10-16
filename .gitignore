@@ -1,0 +1,20 @@
+# Python bytecode
+*.pyc
+__pycache__/
+
+# Virtual environments
+env/
+venv/
+
+# PyCharm project settings
+.idea/
+
+# Django secret key
+*.env
+
+# Static and media files (if you don't want to track them)
+static/
+media/
+
+# Database files
+*.sqlite3
