@@ -34,7 +34,7 @@ def enqueue(data_queue, data):
     return queue
 
 def get_ppg(data_queue, window_size, data_freq=100):
-    sampling_rate = 100
+    sampling_rate = 20 #change back to 100
     signal = []
     length = len(data_queue)
     # data_queue.popleft()

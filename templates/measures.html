@@ -3,6 +3,119 @@
 <head>
     <meta charset="UTF-8">
     <title>Measures</title>
+    <style>
+        /* Default body style with white text for visibility */
+        body {
+            color: #ffffff;  /* Default text color */
+            transition: background-color 0.5s ease, color 0.5s ease; /* Smooth transition */
+            margin: 0;  /* Remove margin for proper canvas display */
+            overflow: hidden; /* Hide scrollbars to fit content */
+        }
+        
+        /* Table styles to ensure text visibility */
+        .table {
+            width: 100%;
+            margin: 20px 0;
+            position: absolute;
+            z-index: 10; /* Ensure the table is on top of the p5.js canvas */
+        }
+
+        .table td {
+            padding: 10px;
+            text-align: center;
+        }
+    </style>
+    <!-- Include the p5.js library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
+    <script>
+        // Function to create a smooth gradient color based on bpm
+        function getColorForBpm(bpm) {
+            let r, g, b;
+
+            // Normalize bpm to a range between 0 and 1 (assuming 80 <= bpm <= 130)
+            const normalizedBpm = Math.min(Math.max(bpm, 80), 130) - 80;
+            const scaledBpm = normalizedBpm / 50;  // Scale to 0-1, since 130-80 = 50
+
+            // Color gradient from green (80 bpm) to yellow (105 bpm) to red (130 bpm)
+            if (scaledBpm <= 0.5) {
+                const ratio = scaledBpm * 2;  // Scale normalized value to [0, 1] for green-yellow
+                r = Math.floor(ratio * 255);
+                g = 255;
+                b = 0;
+            } else {
+                const ratio = (scaledBpm - 0.5) * 2;  // Scale normalized value to [0, 1] for yellow-red
+                r = 255;
+                g = Math.floor((1 - ratio) * 255);
+                b = 0;
+            }
+
+            return `rgb(${r}, ${g}, ${b})`;
+        }
+
+        // Function to update the favicon dynamically
+        function updateFavicon(color) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 32;
+            canvas.height = 32;
+            const context = canvas.getContext('2d');
+            
+            context.fillStyle = color;
+            context.fillRect(0, 0, 32, 32);
+
+            const faviconUrl = canvas.toDataURL('image/png');
+            let favicon = document.querySelector('link[rel="icon"]');
+            if (!favicon) {
+                favicon = document.createElement('link');
+                favicon.rel = 'icon';
+                document.head.appendChild(favicon);
+            }
+
+            favicon.href = faviconUrl;
+        }
+
+        // Function to change background and text color based on bpm
+        function changeBackgroundColor(bpm) {
+            const color = getColorForBpm(bpm);
+            const textColor = 'white'; 
+
+            document.body.style.backgroundColor = color;
+            document.body.style.color = textColor;
+
+            updateFavicon(color);
+        }
+
+        // Wait for the DOM to load before applying background color
+        document.addEventListener('DOMContentLoaded', function() {
+            const bpm = parseInt('{{ bpm }}', 10);  // Get 'bpm' from Django template
+            changeBackgroundColor(bpm);
+        });
+
+        // p5.js Sketch
+        let bpmValue = parseInt('{{ bpm }}', 10);  // Get 'bpm' from Django template
+
+        function setup() {
+            createCanvas(windowWidth, windowHeight);
+            noStroke();
+        }
+
+        function draw() {
+            background(0);
+
+            // Use BPM to control circle color and size
+            let color = getColorForBpm(bpmValue);
+            fill(color);
+
+            // Use BPM to adjust circle size
+            let circleSize = map(bpmValue, 80, 130, 50, 300);
+            ellipse(width / 2, height / 2, circleSize);
+        }
+
+        // Adjust the canvas size if the window is resized
+        function windowResized() {
+            resizeCanvas(windowWidth, windowHeight);
+        }
+    </script>
+    <meta http-equiv="refresh" content="20">
 </head>
 <body>
     <table class="table table-striped" id="hrv_table">

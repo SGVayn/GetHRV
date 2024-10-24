@@ -31,8 +31,9 @@ def post(request):
  global ppg_data, ppg, sampling_rate
  global measures
  global num
- if request.method == 'POST':  # 当提交表单时
-     # 判断是否传参
+
+ if request.method == 'POST':  # when the form is submitted
+     # 判断是否传参 # determine whether parameters are passed
      num += 1
      print(num)
      data = json.loads(request.body)
@@ -41,18 +42,17 @@ def post(request):
      print(data)
      print("time:" + data["time"])
 
-     if num >= 50 and len(data): # num >= 100 这个判断可以去掉
+     if num >= 50 and len(data): # num >= 100 这个判断可以去掉 # this judgment can be removed
          ppg_data = enqueue(ppg_data, data)
-         sampling_rate, ppg, ppg_data = get_ppg(ppg_data, 60)
+         sampling_rate, ppg, ppg_data = get_ppg(ppg_data, 5) #change back to 60
          working_data, measures = hrv_generator(measures, ppg, sampling_rate)
          #print("measures:")
          #print(measures)
 
 
- # 将processed data 存入数据库 （这一步之前在models.py 中创建class）
+ # 将processed data 存入数据库 （这一步之前在models.py 中创建class） # save the processed data to the database (this step was created in class in models.py)
 
          if len(measures):
-         # 防止空白内容
          #is not empty,saving the data to the database using the 'Measures' model.
              measures_instance = Measures()
              for key, value in measures.items():
@@ -69,7 +69,8 @@ def post(request):
  # return render(request, "measures.html", {"measures": measures})
  template = loader.get_template('measures.html')
  context = {
-     "measures": measures
+     "measures": measures,
+     "bpm": measures.get("bpm", 0),  # Pass 'bpm' to control the background color
  }
  return HttpResponse(template.render(context, request))
 
