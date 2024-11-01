@@ -44,7 +44,7 @@ def post(request):
 
      if num >= 50 and len(data): # num >= 100 这个判断可以去掉 # this judgment can be removed
          ppg_data = enqueue(ppg_data, data)
-         sampling_rate, ppg, ppg_data = get_ppg(ppg_data, 5) #change back to 60
+         sampling_rate, ppg, ppg_data = get_ppg(ppg_data, 60) #change back to 60
          working_data, measures = hrv_generator(measures, ppg, sampling_rate)
          #print("measures:")
          #print(measures)
@@ -53,7 +53,7 @@ def post(request):
  # 将processed data 存入数据库 （这一步之前在models.py 中创建class） # save the processed data to the database (this step was created in class in models.py)
 
          if len(measures):
-         #is not empty,saving the data to the database using the 'Measures' model.
+         #is not empty,saving the data to the database using the 'Measures' model. ##this outputs the mess in chat when successfully saving a new item to the database
              measures_instance = Measures()
              for key, value in measures.items():
                  print("key")
@@ -67,7 +67,7 @@ def post(request):
              measures_instance.save()
 
  # return render(request, "measures.html", {"measures": measures})
- template = loader.get_template('measures.html')
+ template = loader.get_template('measures.html')   ##change to whatever html template i make hrv/measures.html if i want the one inside the folder
  context = {
      "measures": measures,
      "bpm": measures.get("bpm", 0),  # Pass 'bpm' to control the background color

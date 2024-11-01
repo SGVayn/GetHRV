@@ -28,15 +28,15 @@
     <!-- Include the p5.js library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
     <script>
-        // Function to create a smooth gradient color based on bpm
+        // Function to create a smooth gradient color based on bpm (30 to 160)
         function getColorForBpm(bpm) {
             let r, g, b;
 
-            // Normalize bpm to a range between 0 and 1 (assuming 80 <= bpm <= 130)
-            const normalizedBpm = Math.min(Math.max(bpm, 80), 130) - 80;
-            const scaledBpm = normalizedBpm / 50;  // Scale to 0-1, since 130-80 = 50
+            // Normalize bpm to a range between 0 and 1 (assuming 30 <= bpm <= 160)
+            const normalizedBpm = Math.min(Math.max(bpm, 30), 160) - 30;
+            const scaledBpm = normalizedBpm / 130;  // Scale to 0-1, since 160-30 = 130
 
-            // Color gradient from green (80 bpm) to yellow (105 bpm) to red (130 bpm)
+            // Color gradient from green (30 bpm) to yellow (95 bpm) to red (160 bpm)
             if (scaledBpm <= 0.5) {
                 const ratio = scaledBpm * 2;  // Scale normalized value to [0, 1] for green-yellow
                 r = Math.floor(ratio * 255);
@@ -106,7 +106,7 @@
             fill(color);
 
             // Use BPM to adjust circle size
-            let circleSize = map(bpmValue, 80, 130, 50, 300);
+            let circleSize = map(bpmValue, 30, 160, 50, 300);
             ellipse(width / 2, height / 2, circleSize);
         }
 

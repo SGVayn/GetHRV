@@ -48,7 +48,7 @@ class Measures(models.Model):
 
     class Meta:
         db_table = 'measures'
-
+        verbose_name_plural = "Measures"
         #将数据库表名定义为measures
 
 
