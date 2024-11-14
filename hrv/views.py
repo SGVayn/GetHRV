@@ -87,6 +87,17 @@ def my_api_endpoint(request):
    return JsonResponse(measure_json, safe=False)
 
 
+def visual(request):
+    measures_instance = Measures.objects.order_by('-timeStamp').first()
+
+    # Convert the instance fields to a dictionary if `measures` is expected as a dictionary in the template
+    measures = {field.name: getattr(measures_instance, field.name) for field in
+                Measures._meta.fields} if measures_instance else {}
+
+    context = {
+        'measures': measures  # Pass the latest measures data to the template
+    }
+    return render(request, 'visual.html', context)
 
 
 
