@@ -14,7 +14,6 @@ envi/
 *.env
 
 # Static and media files (if you don't want to track them)
-static/
 media/
 
 # Database files
