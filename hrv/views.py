@@ -100,4 +100,9 @@ def visual(request):
     return render(request, 'visual.html', context)
 
 
+from django.shortcuts import render
+
+def ocean_view(request):
+    return render(request, 'ocean.html')
+
 

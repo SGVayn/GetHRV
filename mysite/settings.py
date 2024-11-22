@@ -112,7 +112,15 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/dev/howto/static-files/
 
-STATIC_URL = "static/"
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+STATIC_URL = '/static/'
+
+# Add the `static` folder in the `hrv` app
+STATICFILES_DIRS = [
+    BASE_DIR / 'hrv' / 'static',
+    BASE_DIR / 'node_modules',
+]
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/dev/ref/settings/#default-auto-field
