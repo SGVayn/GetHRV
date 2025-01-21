@@ -102,7 +102,7 @@ def visual(request):
 
 from django.shortcuts import render
 
-def ocean_view(request):
-    return render(request, 'ocean.html')
+def threejs_page(request):
+    return render(request, 'index.html')
 
 

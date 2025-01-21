@@ -1,0 +1,27 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Three.js Project</title>
+    <link rel="stylesheet" href="{% static 'threejs/style.css' %}">
+</head>
+<body>
+    <canvas class="webgl"></canvas>
+
+    <!-- Import map -->
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "{% static 'threejs/js/three.module.js' %}",
+            "three/addons/": "{% static 'threejs/js/' %}",
+            "lil-gui": "{% static 'threejs/js/lil-gui.module.min.js' %}"
+        }
+    }
+    </script>
+
+    <!-- Use your project-specific script -->
+    <script type="module" src="{% static 'threejs/script.js' %}"></script>
+</body>
+</html>
