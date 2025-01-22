@@ -217,7 +217,17 @@ scene.add(particles.points)
  */
 gui.addColor(debugObject, 'clearColor').onChange(() => { renderer.setClearColor(debugObject.clearColor) })
 gui.add(particles.material.uniforms.uSize, 'value').min(0).max(1).step(0.001).name('uSize')
-gui.add(gpgpu.particlesVariable.material.uniforms.uFlowFieldInfluence, 'value').min(0).max(1).step(0.001).name('uFlowFieldInfluence')
+// gui.add(gpgpu.particlesVariable.material.uniforms.uFlowFieldInfluence, 'value').min(0).max(1).step(0.001).name('uFlowFieldInfluence')
+
+gui.add(gpgpu.particlesVariable.material.uniforms.uFlowFieldInfluence, 'value')
+    .min(0)
+    .max(1)
+    .step(0.001)
+    .name('uFlowFieldInfluence')
+    .setValue(latestSDNN); // Initialize with latestSDNN
+
+console.log(latestSDNN, "derp");
+
 gui.add(gpgpu.particlesVariable.material.uniforms.uFlowFieldStrength, 'value').min(0).max(10).step(0.001).name('uFlowfieldStrength')
 gui.add(gpgpu.particlesVariable.material.uniforms.uFlowFieldFrequency, 'value').min(0).max(10).step(0.001).name('uFlowfieldFrequency')
 

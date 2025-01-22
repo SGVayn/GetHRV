@@ -103,6 +103,16 @@ def visual(request):
 from django.shortcuts import render
 
 def threejs_page(request):
-    return render(request, 'index.html')
+    # Get the latest Measures instance
+    latest_measure = Measures.objects.order_by('-timeStamp').first()
+
+    # Extract the SDNN value, default to None if no instance exists
+    latest_sdnn = latest_measure.sdnn if latest_measure else None
+
+    # Pass the latest SDNN value to the template
+    context = {
+        'latest_sdnn': latest_sdnn
+    }
+    return render(request, 'index.html', context)
 
 

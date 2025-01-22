@@ -10,6 +10,11 @@
 <body>
     <canvas class="webgl"></canvas>
 
+    <!-- Inject the latest SDNN value -->
+    <script>
+        const latestSDNN = {{ latest_sdnn|default:0.445 }};
+    </script>
+
     <!-- Import map -->
     <script type="importmap">
     {
