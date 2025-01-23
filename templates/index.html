@@ -9,7 +9,9 @@
 </head>
 <body>
     <canvas class="webgl"></canvas>
-
+<div id="current-sdnn" style="position: absolute; top: 10px; left: 10px; color: white;">
+        Current SDNN: <span id="sdnn-value">Loading...</span>
+    </div>
     <!-- Inject the latest SDNN value -->
     <script>
         const latestSDNN = {{ latest_sdnn|default:0.445 }};
@@ -25,6 +27,8 @@
         }
     }
     </script>
+    
+    
 
     <!-- Use your project-specific script -->
     <script type="module" src="{% static 'threejs/script.js' %}"></script>

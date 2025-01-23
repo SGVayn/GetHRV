@@ -187,7 +187,7 @@ for(let y = 0; y < gpgpu.size; y++)
         sizesArray[i] = Math.random()
     }
 }
-
+console.log("GUI Controllers:", gui.__controllers);
 
 particles.geometry = new THREE.BufferGeometry()
 particles.geometry.setDrawRange(0, baseGeometry.count)
@@ -212,24 +212,82 @@ particles.material = new THREE.ShaderMaterial({
 particles.points = new THREE.Points(particles.geometry, particles.material)
 scene.add(particles.points)
 
+
 /**
- * Tweaks
+ * Tweaks gui.add(gpgpu.particlesVariable.material.uniforms.uFlowFieldInfluence, 'value').min(0).max(1).step(0.001).name('uFlowFieldInfluence')
  */
 gui.addColor(debugObject, 'clearColor').onChange(() => { renderer.setClearColor(debugObject.clearColor) })
 gui.add(particles.material.uniforms.uSize, 'value').min(0).max(1).step(0.001).name('uSize')
-// gui.add(gpgpu.particlesVariable.material.uniforms.uFlowFieldInfluence, 'value').min(0).max(1).step(0.001).name('uFlowFieldInfluence')
 
-gui.add(gpgpu.particlesVariable.material.uniforms.uFlowFieldInfluence, 'value')
+
+// gui.add(gpgpu.particlesVariable.material.uniforms.uFlowFieldInfluence, 'value')
+//     .min(0)
+//     .max(1)
+//     .step(0.001)
+//     .name('uFlowFieldInfluence');
+
+
+
+
+
+let latestSDNN = 0.445;
+const flowFieldInfluenceController = gui.add(
+    gpgpu.particlesVariable.material.uniforms.uFlowFieldInfluence,
+    'value'
+)
     .min(0)
     .max(1)
     .step(0.001)
-    .name('uFlowFieldInfluence')
-    .setValue(latestSDNN); // Initialize with latestSDNN
+    .name('uFlowFieldInfluence');
 
-console.log(latestSDNN, "derp");
+
+function fetchAverageSDNN(numEntries = 10) {
+    fetch(`/hrv/api/latest-sdnn/?num_entries=${numEntries}`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            const avgSDNN = data.average_sdnn;
+
+            // Define SDNN thresholds for good (low stress) and bad (high stress)
+            const sdnnMin = 0;   // Minimum SDNN value (good stress level)
+            const sdnnMax = 200; // Maximum SDNN value (bad stress level)
+
+            // Normalize SDNN to a value between 0 and 1
+            const normalizedSDNN = Math.max(0, Math.min(1, (avgSDNN - sdnnMin) / (sdnnMax - sdnnMin)));
+
+            // Update shader uniform with the normalized value
+            gpgpu.particlesVariable.material.uniforms.uFlowFieldInfluence.value = normalizedSDNN;
+
+            // Update the GUI slider directly
+            flowFieldInfluenceController.setValue(normalizedSDNN);
+
+            // Update the "Current SDNN" text
+            const sdnnValueElement = document.getElementById('sdnn-value');
+            if (sdnnValueElement) {
+                sdnnValueElement.innerText = avgSDNN.toFixed(2); // Display the raw SDNN value with two decimal places
+            }
+
+            console.log(`Updated Average SDNN to: ${avgSDNN} (Normalized: ${normalizedSDNN})`);
+        })
+        .catch(error => console.error('Error fetching average SDNN:', error));
+}
+fetchAverageSDNN(10); // Initial call
+setInterval(() => fetchAverageSDNN(10), 2000);
+
+
+// setInterval(fetchLatestSDNN, 10000);
+//fetchLatestSDNN();
+
+
+
+
 
 gui.add(gpgpu.particlesVariable.material.uniforms.uFlowFieldStrength, 'value').min(0).max(10).step(0.001).name('uFlowfieldStrength')
-gui.add(gpgpu.particlesVariable.material.uniforms.uFlowFieldFrequency, 'value').min(0).max(10).step(0.001).name('uFlowfieldFrequency')
+gui.add(gpgpu.particlesVariable.material.uniforms.uFlowFieldFrequency, 'value').min(0).max(2).step(0.001).name('uFlowfieldFrequency')
 
 // Add fullscreen functionality
 debugObject.toggleFullscreen = () => {
