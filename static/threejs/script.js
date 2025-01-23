@@ -252,12 +252,20 @@ function fetchAverageSDNN(numEntries = 10) {
         .then(data => {
             const avgSDNN = data.average_sdnn;
 
-            // Define SDNN thresholds for good (low stress) and bad (high stress)
-            const sdnnMin = 0;   // Minimum SDNN value (good stress level)
-            const sdnnMax = 200; // Maximum SDNN value (bad stress level)
+            // HRV thresholds
+            const hrvLowThreshold = 50;  // Low HRV (bad health)
+            const hrvHighThreshold = 100; // High HRV (good health)
 
-            // Normalize SDNN to a value between 0 and 1
-            const normalizedSDNN = Math.max(0, Math.min(1, (avgSDNN - sdnnMin) / (sdnnMax - sdnnMin)));
+            // Normalize SDNN so low values result in a higher slider position (bad) and high values result in a lower slider position (good)
+            let normalizedSDNN;
+            if (avgSDNN <= hrvLowThreshold) {
+                normalizedSDNN = 1; // Fully bad
+            } else if (avgSDNN >= hrvHighThreshold) {
+                normalizedSDNN = 0; // Fully good
+            } else {
+                // Scale linearly between high and low thresholds (inverted logic)
+                normalizedSDNN = (hrvHighThreshold - avgSDNN) / (hrvHighThreshold - hrvLowThreshold);
+            }
 
             // Update shader uniform with the normalized value
             gpgpu.particlesVariable.material.uniforms.uFlowFieldInfluence.value = normalizedSDNN;
