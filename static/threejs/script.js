@@ -104,6 +104,13 @@ renderer.setClearColor(debugObject.clearColor)
 
 //load model
 const gltf = await gltfLoader.loadAsync('/static/threejs/models/flowerpot.glb'); //returns a promise js waits till it loads
+// const gltf = await gltfLoader.loadAsync('/static/threejs/models/polar_bear.glb');
+// const gltf = await gltfLoader.loadAsync('/static/threejs/models/chameleon.glb');
+// const gltf = await gltfLoader.loadAsync('/static/threejs/models/rose.glb');
+// const gltf = await gltfLoader.loadAsync('/static/threejs/models/model.glb');
+
+
+
 //better using callback function
 
 //base geometry
