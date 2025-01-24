@@ -224,7 +224,7 @@ scene.add(particles.points)
  * Tweaks gui.add(gpgpu.particlesVariable.material.uniforms.uFlowFieldInfluence, 'value').min(0).max(1).step(0.001).name('uFlowFieldInfluence')
  */
 gui.addColor(debugObject, 'clearColor').onChange(() => { renderer.setClearColor(debugObject.clearColor) })
-gui.add(particles.material.uniforms.uSize, 'value').min(0).max(1).step(0.001).name('uSize')
+// gui.add(particles.material.uniforms.uSize, 'value').min(0).max(1).step(0.001).name('uSize')
 
 
 // gui.add(gpgpu.particlesVariable.material.uniforms.uFlowFieldInfluence, 'value')
@@ -247,6 +247,12 @@ const flowFieldInfluenceController = gui.add(
     .step(0.001)
     .name('uFlowFieldInfluence');
 
+// Add GUI controller for uSize
+const sizeController = gui.add(particles.material.uniforms.uSize, 'value')
+    .min(0.01)
+    .max(0.5)
+    .step(0.001)
+    .name('uSize');
 
 function fetchAverageSDNN(numEntries = 10) {
     fetch(`/hrv/api/latest-sdnn/?num_entries=${numEntries}`)
@@ -259,26 +265,31 @@ function fetchAverageSDNN(numEntries = 10) {
         .then(data => {
             const avgSDNN = data.average_sdnn;
 
-            // HRV thresholds
-            const hrvLowThreshold = 50;  // Low HRV (bad health)
-            const hrvHighThreshold = 100; // High HRV (good health)
+            // Adjusted HRV thresholds
+            const hrvLowThreshold = 140;   // Low HRV (bad health)
+            const hrvHighThreshold = 170; // High HRV (good health)
 
-            // Normalize SDNN so low values result in a higher slider position (bad) and high values result in a lower slider position (good)
+            // Normalize SDNN for uFlowFieldInfluence
             let normalizedSDNN;
             if (avgSDNN <= hrvLowThreshold) {
                 normalizedSDNN = 1; // Fully bad
             } else if (avgSDNN >= hrvHighThreshold) {
                 normalizedSDNN = 0; // Fully good
             } else {
-                // Scale linearly between high and low thresholds (inverted logic)
                 normalizedSDNN = (hrvHighThreshold - avgSDNN) / (hrvHighThreshold - hrvLowThreshold);
             }
 
-            // Update shader uniform with the normalized value
+            // Update uFlowFieldInfluence
             gpgpu.particlesVariable.material.uniforms.uFlowFieldInfluence.value = normalizedSDNN;
-
-            // Update the GUI slider directly
             flowFieldInfluenceController.setValue(normalizedSDNN);
+
+            // Calculate and update uSize
+            const minSize = 0.4; // Larger particle size for bad HRV
+            const maxSize = 0.02; // Smaller particle size for good HRV
+            const updatedSize = normalizedSDNN * (maxSize - minSize) + minSize;
+
+            particles.material.uniforms.uSize.value = updatedSize;
+            sizeController.setValue(updatedSize);
 
             // Update the "Current SDNN" text
             const sdnnValueElement = document.getElementById('sdnn-value');
@@ -286,7 +297,7 @@ function fetchAverageSDNN(numEntries = 10) {
                 sdnnValueElement.innerText = avgSDNN.toFixed(2); // Display the raw SDNN value with two decimal places
             }
 
-            console.log(`Updated Average SDNN to: ${avgSDNN} (Normalized: ${normalizedSDNN})`);
+            console.log(`Updated Average SDNN to: ${avgSDNN} (Normalized: ${normalizedSDNN}, uSize: ${updatedSize})`);
         })
         .catch(error => console.error('Error fetching average SDNN:', error));
 }
@@ -329,7 +340,7 @@ const tick = () =>
     const elapsedTime = clock.getElapsedTime()
     const deltaTime = elapsedTime - previousTime
     previousTime = elapsedTime
-    
+
     // Update controls
     controls.update()
 
@@ -346,7 +357,7 @@ const tick = () =>
     renderer.render(scene, camera)
 
     //log time and utime
-    
+
     // Call tick again on the next frame
     window.requestAnimationFrame(tick)
 }
