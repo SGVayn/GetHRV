@@ -28,6 +28,7 @@ def index(request):
 # 接口函数
 import sqlite3
 
+## recieve the data from the watch
 def post(request):
  global ppg_data, ppg, sampling_rate
  global measures
