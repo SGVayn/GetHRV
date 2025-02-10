@@ -5,8 +5,16 @@ import { DRACOLoader } from '/static/threejs/js/DRACOLoader.js';
 import GUI from '/static/threejs/js/lil-gui.module.min.js';
 import { GPUComputationRenderer } from '/static/threejs/js/GPUComputationRenderer.js';
 
+// for post-processing
+import { EffectComposer } from '/static/threejs/js/jsm/postprocessing/EffectComposer.js';
+import { RenderPass } from '/static/threejs/js/jsm/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from '/static/threejs/js/jsm/postprocessing/UnrealBloomPass.js';
 
-// Async function to load shaders
+
+
+
+
+// async function to load shaders
 async function loadShader(url) {
     const response = await fetch(url);
     if (!response.ok) {
@@ -15,7 +23,7 @@ async function loadShader(url) {
     return await response.text();
 }
 
-// Dynamically load shaders
+// dynamically load shaders to get them working within django
 const particlesVertexShader = await loadShader('/static/threejs/shaders/particles/vertex.glsl');
 const particlesFragmentShader = await loadShader('/static/threejs/shaders/particles/fragment.glsl');
 const gpgpuParticlesShader = await loadShader('/static/threejs/shaders/gpgpu/particles.glsl');
@@ -32,48 +40,43 @@ console.log('GPGPU Shader:', gpgpuParticlesShader);
 /**
  * Base
  */
-// Debug
+// debug ui
 const gui = new GUI({ width: 340 })
 const debugObject = {}
 
-// Select the GUI container
+// select the GUI container
 const guiContainer = document.querySelector('.lil-gui');
 
-// Timeout variable to track inactivity
+// timeout variable to track inactivity
 let hideGuiTimeout;
-
-// Function to show GUI
+// show GUI/hide on mouse move
 function showGUI() {
     guiContainer.style.opacity = '1';
-    guiContainer.style.pointerEvents = 'auto'; // Enable interaction
-
-    // Clear any existing timeout
+    guiContainer.style.pointerEvents = 'auto';
     clearTimeout(hideGuiTimeout);
-
-    // Set a timeout to hide the GUI after 2 seconds of inactivity
     hideGuiTimeout = setTimeout(() => {
         guiContainer.style.opacity = '0';
-        guiContainer.style.pointerEvents = 'none'; // Disable interaction
+        guiContainer.style.pointerEvents = 'none';
     }, 2000);
 }
 
-// Add event listeners to detect mouse movement
+
 document.addEventListener('mousemove', showGUI);
 
-// Initially hide GUI after 2 seconds
+// hide GUI after mouse inactivity
 hideGuiTimeout = setTimeout(() => {
     guiContainer.style.opacity = '0';
     guiContainer.style.pointerEvents = 'none';
-}, 2000);
+}, 2500);
 
 
 
 
-// Canvas
+// canvas
 const canvas = document.querySelector('canvas.webgl')
-// Scene
+// scene
 const scene = new THREE.Scene()
-// Loaders
+// loaders
 const dracoLoader = new DRACOLoader()
 dracoLoader.setDecoderPath('/static/threejs/draco/');
 const gltfLoader = new GLTFLoader()
@@ -90,19 +93,19 @@ const sizes = {
 
 window.addEventListener('resize', () =>
 {
-    // Update sizes
+    // update sizes
     sizes.width = window.innerWidth
     sizes.height = window.innerHeight
     sizes.pixelRatio = Math.min(window.devicePixelRatio, 2)
 
-    // Materials
+    // materials
     particles.material.uniforms.uResolution.value.set(sizes.width * sizes.pixelRatio, sizes.height * sizes.pixelRatio)
 
-    // Update camera
+    // update camera
     camera.aspect = sizes.width / sizes.height
     camera.updateProjectionMatrix()
 
-    // Update renderer
+    // update renderer
     renderer.setSize(sizes.width, sizes.height)
     renderer.setPixelRatio(sizes.pixelRatio)
 })
@@ -110,12 +113,12 @@ window.addEventListener('resize', () =>
 /**
  * Camera
  */
-// Base camera
+// base camera
 const camera = new THREE.PerspectiveCamera(35, sizes.width / sizes.height, 0.1, 5000)
 camera.position.set(4.5, 4, 70 )
 scene.add(camera)
 
-// Controls
+// controls
 const controls = new OrbitControls(camera, canvas)
 controls.enableDamping = true
 
@@ -129,8 +132,8 @@ const renderer = new THREE.WebGLRenderer({
 renderer.setSize(sizes.width, sizes.height)
 renderer.setPixelRatio(sizes.pixelRatio)
 
-debugObject.clearColor = '#29191f'
-renderer.setClearColor(debugObject.clearColor)
+debugObject.BackgroundColor = '#29191f'
+renderer.setClearColor(debugObject.BackgroundColor)
 
 //load model
 const gltf = await gltfLoader.loadAsync('/static/threejs/models/flowerpot.glb'); //returns a promise js waits till it loads
@@ -167,17 +170,16 @@ for (let i = 0; i < baseGeometry.count; i++)
     baseParticlesTexture.image.data[i4 +1] = baseGeometry.instance.attributes.position.array[i3+1]
     baseParticlesTexture.image.data[i4 +2] = baseGeometry.instance.attributes.position.array[i3+2]
     baseParticlesTexture.image.data[i4 +3] = Math.random() //RGBA
-
-} //RGBA is 4x4 not 3x3
-
+}
+//reminder that GBA is 4x4 not 3x3
 // console.log(baseParticlesTexture.image.data);
 
-// Particles variable
+// particles variable
 gpgpu.particlesVariable = gpgpu.computation.addVariable('uParticles', gpgpuParticlesShader, baseParticlesTexture)
 gpgpu.particlesVariable.material.uniforms.uDeltaTime = new THREE.Uniform(0)
 gpgpu.computation.setVariableDependencies(gpgpu.particlesVariable, [ gpgpu.particlesVariable ])
 
-// Uniforms
+// uniforms
 gpgpu.particlesVariable.material.uniforms.uTime = new THREE.Uniform(0)
 gpgpu.particlesVariable.material.uniforms.uBase = new THREE.Uniform(baseParticlesTexture)
 gpgpu.particlesVariable.material.uniforms.uFlowFieldInfluence = new THREE.Uniform(0.445) //half influenced
@@ -204,7 +206,7 @@ scene.add(gpgpu.debug)
  */
 const particles = {}
 
-// Geometry
+//geometry
 const particlesUvArray = new Float32Array(baseGeometry.count * 2) //2 for xy
 const sizesArray = new Float32Array(baseGeometry.count) //size of each particle
 
@@ -232,7 +234,7 @@ particles.geometry.setAttribute('aParticlesUv', new THREE.BufferAttribute(partic
 particles.geometry.setAttribute('aColor' , baseGeometry.instance.attributes.color) //to send to vertex shader
 particles.geometry.setAttribute('aSize', new THREE.BufferAttribute(sizesArray, 1)) //to send to vertex shader only 1 value needed
 
-// Material
+// material
 particles.material = new THREE.ShaderMaterial({
     vertexShader: particlesVertexShader,
     fragmentShader: particlesFragmentShader,
@@ -245,7 +247,7 @@ particles.material = new THREE.ShaderMaterial({
     }
 })
 
-// Points
+// points
 particles.points = new THREE.Points(particles.geometry, particles.material)
 scene.add(particles.points)
 
@@ -253,39 +255,64 @@ scene.add(particles.points)
 /**
  * Tweaks gui.add(gpgpu.particlesVariable.material.uniforms.uFlowFieldInfluence, 'value').min(0).max(1).step(0.001).name('uFlowFieldInfluence')
  */
-gui.addColor(debugObject, 'clearColor').onChange(() => { renderer.setClearColor(debugObject.clearColor) })
-// gui.add(particles.material.uniforms.uSize, 'value').min(0).max(1).step(0.001).name('uSize')
+gui.addColor(debugObject, 'BackgroundColor').onChange(() => { renderer.setClearColor(debugObject.BackgroundColor) })
 
 
-// gui.add(gpgpu.particlesVariable.material.uniforms.uFlowFieldInfluence, 'value')
-//     .min(0)
-//     .max(1)
-//     .step(0.001)
-//     .name('uFlowFieldInfluence');
+
+
+// post-processing
+// render pass
+const renderScene = new RenderPass(scene, camera);
+
+//bloom effect
+const bloomPass = new UnrealBloomPass(
+    new THREE.Vector2(window.innerWidth, window.innerHeight),
+    1.5,  //strength
+    0.4,  //radius
+    0.85  //threshold
+);
+
+// ✅ Set bloom effect values explicitly (Fix)
+bloomPass.threshold = 0.61;
+bloomPass.strength = 1.5;
+bloomPass.radius = 0.4;
+
+// create the composer (post-processing pipeline)
+const composer = new EffectComposer(renderer);
+composer.addPass(renderScene);
+composer.addPass(bloomPass);
+
+// adjust renderer settings for bloom
+renderer.toneMapping = THREE.REINHARD_TONE_MAPPING;
+renderer.toneMappingExposure = 1.5;
+
+debugObject.bloomThreshold = 0.5;
+debugObject.bloomStrength = 1.5;
+debugObject.bloomRadius = 0.4;
+
+const bloomFolder = gui.addFolder('Bloom Effects');
+bloomFolder.close();
+bloomFolder.add(debugObject, 'bloomThreshold').min(0).max(1).step(0.01).onChange(value => {bloomPass.threshold = value;});
+bloomFolder.add(debugObject, 'bloomStrength').min(0).max(3).step(0.1).onChange(value => {bloomPass.strength = value;});
+bloomFolder.add(debugObject, 'bloomRadius').min(0).max(1).step(0.01).onChange(value => {bloomPass.radius = value;});
 
 
 
 
 
 let latestSDNN = 0.445;
-const flowFieldInfluenceController = gui.add(
-    gpgpu.particlesVariable.material.uniforms.uFlowFieldInfluence,
-    'value'
-)
-    .min(0)
-    .max(1)
-    .step(0.001)
-    .name('uFlowFieldInfluence');
 
-// Add GUI controller for uSize
-const sizeController = gui.add(particles.material.uniforms.uSize, 'value')
-    .min(0.01)
-    .max(0.5)
-    .step(0.001)
-    .name('uSize');
+//gui for flowfield stuff
+const flowFieldFolder = gui.addFolder('Flow Field');
+flowFieldFolder.close()
+const flowFieldInfluenceController = flowFieldFolder.add(gpgpu.particlesVariable.material.uniforms.uFlowFieldInfluence, 'value').min(0).max(1).step(0.001).name('uFlowFieldInfluence');
+const sizeController = flowFieldFolder.add(particles.material.uniforms.uSize, 'value').min(0.01).max(0.5).step(0.001).name('uSize');
+flowFieldFolder.add(gpgpu.particlesVariable.material.uniforms.uFlowFieldStrength, 'value').min(0).max(10).step(0.001).name('uFlowFieldStrength');
+flowFieldFolder.add(gpgpu.particlesVariable.material.uniforms.uFlowFieldFrequency, 'value').min(0).max(2).step(0.001).name('uFlowFieldFrequency');
 
-let targetSize = 0.1; // Stores the desired size after fetching SDNN
-let lerpFactor = 0.01; // Controls the speed of transition (0.1 = smooth, 1 = instant)
+
+let targetSize = 0.1; // used in upcoming lerp function
+let lerpFactor = 0.01; // transition speed
 
 function fetchAverageSDNN(numEntries = 10) {
     fetch(`/hrv/api/latest-sdnn/?num_entries=${numEntries}`)
@@ -298,40 +325,40 @@ function fetchAverageSDNN(numEntries = 10) {
         .then(data => {
             const avgSDNN = data.average_sdnn;
 
-            // Use dynamic SDNN thresholds from debugObject
+            // get sdnn thresholds from the GUI
             const hrvLowThreshold = debugObject.hrvLowThreshold;
             const hrvHighThreshold = debugObject.hrvHighThreshold;
 
-            // Normalize SDNN (0 to 1 scaling)
+            // normalise sdnn
             let normalizedSDNN;
             if (avgSDNN <= hrvLowThreshold) {
-                normalizedSDNN = 0; // Fully bad
+                normalizedSDNN = 0; //  bad sdnn
             } else if (avgSDNN >= hrvHighThreshold) {
-                normalizedSDNN = 1; // Fully good
+                normalizedSDNN = 1; //  good sdnn
             } else {
                 normalizedSDNN = (avgSDNN - hrvLowThreshold) / (hrvHighThreshold - hrvLowThreshold);
             }
 
-            // Scale flow field influence (0.6 → 0) [INVERTED]
+            // scale flow field influence (0.6 → 0)
             const updatedFlowFieldInfluence = (1 - normalizedSDNN) * 0.6;
             gpgpu.particlesVariable.material.uniforms.uFlowFieldInfluence.value = updatedFlowFieldInfluence;
             flowFieldInfluenceController.setValue(updatedFlowFieldInfluence);
 
-            // Calculate new target size for smooth transition
+            // calculate new target size for smooth transition
             const minSize = 0.1;
             const maxSize = 0.5;
             targetSize = normalizedSDNN * (maxSize - minSize) + minSize;
 
-            // Update GUI instantly so the user sees the target value
+            // update GUI
             sizeController.setValue(targetSize);
 
-            // Update the "Current SDNN" text
+            // ppdate current SDNN text
             const sdnnValueElement = document.getElementById('sdnn-value');
             if (sdnnValueElement) {
                 sdnnValueElement.innerText = avgSDNN.toFixed(2);
             }
             document.title = `SDNN: ${avgSDNN.toFixed(2)}`;
-            // **Update the favicon**
+
             updateFavicon(normalizedSDNN);
 
             console.log(`Updated SDNN: ${avgSDNN} | Normalized: ${normalizedSDNN} | uSize: ${targetSize} | uFlowFieldInfluence: ${updatedFlowFieldInfluence}`);
@@ -345,53 +372,25 @@ function updateFavicon(normalizedSDNN) {
     canvas.height = 64;
     const ctx = canvas.getContext("2d");
 
-    // Interpolate color from red (bad) to green (good)
     const red = Math.round(255 * (1 - normalizedSDNN));
     const green = Math.round(255 * normalizedSDNN);
     const color = `rgb(${red}, ${green}, 0)`;
 
-    // Draw a filled circle
     ctx.beginPath();
     ctx.arc(32, 32, 28, 0, Math.PI * 2);
     ctx.fillStyle = color;
     ctx.fill();
 
-    // Convert canvas to data URL
     const faviconUrl = canvas.toDataURL("image/png");
-
-    // Update the favicon link
     const favicon = document.getElementById("favicon");
     favicon.href = faviconUrl;
 }
 
 
-fetchAverageSDNN(10); // Initial call
+fetchAverageSDNN(10); // initial call
 setInterval(() => fetchAverageSDNN(10), 2000);
 
 
-// setInterval(fetchLatestSDNN, 10000);
-//fetchLatestSDNN();
-
-
-
-
-
-gui.add(gpgpu.particlesVariable.material.uniforms.uFlowFieldStrength, 'value').min(0).max(10).step(0.001).name('uFlowfieldStrength')
-gui.add(gpgpu.particlesVariable.material.uniforms.uFlowFieldFrequency, 'value').min(0).max(2).step(0.001).name('uFlowfieldFrequency')
-
-// Add fullscreen functionality
-debugObject.toggleFullscreen = () => {
-    if (!document.fullscreenElement) {
-        // Request fullscreen for the canvas
-        canvas.requestFullscreen();
-    } else {
-        // Exit fullscreen if already in fullscreen mode
-        document.exitFullscreen();
-    }
-};
-
-// Add the fullscreen button to the GUI
-gui.add(debugObject, 'toggleFullscreen').name('Toggle Fullscreen');
 
 /**
  * Animate
@@ -400,22 +399,24 @@ const clock = new THREE.Clock()
 let previousTime = 0
 
 //rotation debug
-debugObject.autoRotate = false; // Default: Auto-rotation is ON
+debugObject.autoRotate = false;
 debugObject.rotationSpeed = 0.05;
 debugObject.rotationRadius = 69.6;
-gui.add(debugObject, 'rotationSpeed').min(0).max(3).step(0.01).name('Rotation Speed');
-gui.add(debugObject, 'rotationRadius').min(10).max(100).step(0.1).name('Rotation Radius');
-gui.add(debugObject, 'autoRotate').name('Auto Rotate');
+const rotationFolder = gui.addFolder('Rotation').close();
+rotationFolder.add(debugObject, 'rotationSpeed').min(0).max(3).step(0.01).name('Rotation Speed');
+rotationFolder.add(debugObject, 'rotationRadius').min(10).max(100).step(0.1).name('Rotation Radius');
+rotationFolder.add(debugObject, 'autoRotate').name('Auto Rotate');
+
 
 // sdnn debug
-debugObject.hrvLowThreshold = 50;  // Default low SDNN threshold
-debugObject.hrvHighThreshold = 150; // Default high SDNN threshold
-gui.add(debugObject, 'hrvLowThreshold').min(10).max(200).step(1).name('Stressed Threshold');
-gui.add(debugObject, 'hrvHighThreshold').min(10).max(200).step(1).name('Not Stressed Threshold');
+debugObject.hrvLowThreshold = 50;
+debugObject.hrvHighThreshold = 150;
+const stressFolder = gui.addFolder('Stress Settings').close();
+stressFolder.add(debugObject, 'hrvLowThreshold').min(10).max(200).step(1).name('Stressed Threshold');
+stressFolder.add(debugObject, 'hrvHighThreshold').min(10).max(200).step(1).name('Not Stressed Threshold');
 
-// Show/Hide Current SDNN
-debugObject.showSDNN = true; // Default: Show SDNN
-gui.add(debugObject, 'showSDNN').name('Show SDNN').onChange((value) => {
+debugObject.showSDNN = true;
+stressFolder.add(debugObject, 'showSDNN').name('Show SDNN').onChange(value => {
     const sdnnContainer = document.getElementById('current-sdnn');
     if (sdnnContainer) {
         sdnnContainer.style.display = value ? 'block' : 'none';
@@ -424,21 +425,31 @@ gui.add(debugObject, 'showSDNN').name('Show SDNN').onChange((value) => {
     }
 });
 
+// fullscreen button
+debugObject.toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+        canvas.requestFullscreen();
+    } else {
+        document.exitFullscreen();
+    }
+};
+gui.add(debugObject, 'toggleFullscreen').name('Toggle Fullscreen');
+
+
 
 const tick = () => {
     const elapsedTime = clock.getElapsedTime();
     const deltaTime = elapsedTime - previousTime;
     previousTime = elapsedTime;
 
-    // Update controls (Only update when NOT auto-rotating)
     if (!debugObject.autoRotate) {
         controls.update();
     }
 
-    // Smoothly transition uSize (lerp)
+    // smooth transition of uSize
     particles.material.uniforms.uSize.value += (targetSize - particles.material.uniforms.uSize.value) * lerpFactor;
 
-    // Rotate the camera around the object only if autoRotate is enabled
+    // rotate camera when enabled
     if (debugObject.autoRotate) {
         camera.position.x = Math.sin(elapsedTime * debugObject.rotationSpeed) * debugObject.rotationRadius;
         camera.position.z = Math.cos(elapsedTime * debugObject.rotationSpeed) * debugObject.rotationRadius;
@@ -450,15 +461,14 @@ const tick = () => {
     gpgpu.particlesVariable.material.uniforms.uDeltaTime.value = deltaTime;
     gpgpu.computation.compute();
 
-    // Update uniform
+    // update particle texture
     particles.material.uniforms.uParticlesTexture.value = gpgpu.computation.getCurrentRenderTarget(gpgpu.particlesVariable).texture;
 
-    // Render normal scene
-    renderer.render(scene, camera);
+    composer.render();
 
-    // Call tick again on the next frame
     window.requestAnimationFrame(tick);
 };
+
 
 
 
