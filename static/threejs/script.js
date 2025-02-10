@@ -330,13 +330,39 @@ function fetchAverageSDNN(numEntries = 10) {
             if (sdnnValueElement) {
                 sdnnValueElement.innerText = avgSDNN.toFixed(2);
             }
+            document.title = `SDNN: ${avgSDNN.toFixed(2)}`;
+            // **Update the favicon**
+            updateFavicon(normalizedSDNN);
 
             console.log(`Updated SDNN: ${avgSDNN} | Normalized: ${normalizedSDNN} | uSize: ${targetSize} | uFlowFieldInfluence: ${updatedFlowFieldInfluence}`);
         })
         .catch(error => console.error('Error fetching average SDNN:', error));
 }
 
+function updateFavicon(normalizedSDNN) {
+    const canvas = document.createElement("canvas");
+    canvas.width = 64;
+    canvas.height = 64;
+    const ctx = canvas.getContext("2d");
 
+    // Interpolate color from red (bad) to green (good)
+    const red = Math.round(255 * (1 - normalizedSDNN));
+    const green = Math.round(255 * normalizedSDNN);
+    const color = `rgb(${red}, ${green}, 0)`;
+
+    // Draw a filled circle
+    ctx.beginPath();
+    ctx.arc(32, 32, 28, 0, Math.PI * 2);
+    ctx.fillStyle = color;
+    ctx.fill();
+
+    // Convert canvas to data URL
+    const faviconUrl = canvas.toDataURL("image/png");
+
+    // Update the favicon link
+    const favicon = document.getElementById("favicon");
+    favicon.href = faviconUrl;
+}
 
 
 fetchAverageSDNN(10); // Initial call
