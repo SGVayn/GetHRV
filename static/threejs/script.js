@@ -36,16 +36,46 @@ console.log('GPGPU Shader:', gpgpuParticlesShader);
 const gui = new GUI({ width: 340 })
 const debugObject = {}
 
+// Select the GUI container
+const guiContainer = document.querySelector('.lil-gui');
+
+// Timeout variable to track inactivity
+let hideGuiTimeout;
+
+// Function to show GUI
+function showGUI() {
+    guiContainer.style.opacity = '1';
+    guiContainer.style.pointerEvents = 'auto'; // Enable interaction
+
+    // Clear any existing timeout
+    clearTimeout(hideGuiTimeout);
+
+    // Set a timeout to hide the GUI after 2 seconds of inactivity
+    hideGuiTimeout = setTimeout(() => {
+        guiContainer.style.opacity = '0';
+        guiContainer.style.pointerEvents = 'none'; // Disable interaction
+    }, 2000);
+}
+
+// Add event listeners to detect mouse movement
+document.addEventListener('mousemove', showGUI);
+
+// Initially hide GUI after 2 seconds
+hideGuiTimeout = setTimeout(() => {
+    guiContainer.style.opacity = '0';
+    guiContainer.style.pointerEvents = 'none';
+}, 2000);
+
+
+
+
 // Canvas
 const canvas = document.querySelector('canvas.webgl')
-
 // Scene
 const scene = new THREE.Scene()
-
 // Loaders
 const dracoLoader = new DRACOLoader()
 dracoLoader.setDecoderPath('/static/threejs/draco/');
-
 const gltfLoader = new GLTFLoader()
 gltfLoader.setDRACOLoader(dracoLoader)
 
@@ -81,7 +111,7 @@ window.addEventListener('resize', () =>
  * Camera
  */
 // Base camera
-const camera = new THREE.PerspectiveCamera(35, sizes.width / sizes.height, 0.1, 100)
+const camera = new THREE.PerspectiveCamera(35, sizes.width / sizes.height, 0.1, 5000)
 camera.position.set(4.5, 4, 70 )
 scene.add(camera)
 
@@ -151,8 +181,8 @@ gpgpu.computation.setVariableDependencies(gpgpu.particlesVariable, [ gpgpu.parti
 gpgpu.particlesVariable.material.uniforms.uTime = new THREE.Uniform(0)
 gpgpu.particlesVariable.material.uniforms.uBase = new THREE.Uniform(baseParticlesTexture)
 gpgpu.particlesVariable.material.uniforms.uFlowFieldInfluence = new THREE.Uniform(0.445) //half influenced
-gpgpu.particlesVariable.material.uniforms.uFlowFieldStrength = new THREE.Uniform(4)
-gpgpu.particlesVariable.material.uniforms.uFlowFieldFrequency = new THREE.Uniform(0.9)
+gpgpu.particlesVariable.material.uniforms.uFlowFieldStrength = new THREE.Uniform(10)
+gpgpu.particlesVariable.material.uniforms.uFlowFieldFrequency = new THREE.Uniform(0.124)
 
 //init
 gpgpu.computation.init()
@@ -254,6 +284,9 @@ const sizeController = gui.add(particles.material.uniforms.uSize, 'value')
     .step(0.001)
     .name('uSize');
 
+let targetSize = 0.1; // Stores the desired size after fetching SDNN
+let lerpFactor = 0.01; // Controls the speed of transition (0.1 = smooth, 1 = instant)
+
 function fetchAverageSDNN(numEntries = 10) {
     fetch(`/hrv/api/latest-sdnn/?num_entries=${numEntries}`)
         .then(response => {
@@ -265,42 +298,47 @@ function fetchAverageSDNN(numEntries = 10) {
         .then(data => {
             const avgSDNN = data.average_sdnn;
 
-            // Adjusted HRV thresholds
-            const hrvLowThreshold = 140;   // Low HRV (bad health)
-            const hrvHighThreshold = 170; // High HRV (good health)
+            // Use dynamic SDNN thresholds from debugObject
+            const hrvLowThreshold = debugObject.hrvLowThreshold;
+            const hrvHighThreshold = debugObject.hrvHighThreshold;
 
-            // Normalize SDNN for uFlowFieldInfluence
+            // Normalize SDNN (0 to 1 scaling)
             let normalizedSDNN;
             if (avgSDNN <= hrvLowThreshold) {
-                normalizedSDNN = 1; // Fully bad
+                normalizedSDNN = 0; // Fully bad
             } else if (avgSDNN >= hrvHighThreshold) {
-                normalizedSDNN = 0; // Fully good
+                normalizedSDNN = 1; // Fully good
             } else {
-                normalizedSDNN = (hrvHighThreshold - avgSDNN) / (hrvHighThreshold - hrvLowThreshold);
+                normalizedSDNN = (avgSDNN - hrvLowThreshold) / (hrvHighThreshold - hrvLowThreshold);
             }
 
-            // Update uFlowFieldInfluence
-            gpgpu.particlesVariable.material.uniforms.uFlowFieldInfluence.value = normalizedSDNN;
-            flowFieldInfluenceController.setValue(normalizedSDNN);
+            // Scale flow field influence (0.6 → 0) [INVERTED]
+            const updatedFlowFieldInfluence = (1 - normalizedSDNN) * 0.6;
+            gpgpu.particlesVariable.material.uniforms.uFlowFieldInfluence.value = updatedFlowFieldInfluence;
+            flowFieldInfluenceController.setValue(updatedFlowFieldInfluence);
 
-            // Calculate and update uSize
-            const minSize = 0.4; // Larger particle size for bad HRV
-            const maxSize = 0.02; // Smaller particle size for good HRV
-            const updatedSize = normalizedSDNN * (maxSize - minSize) + minSize;
+            // Calculate new target size for smooth transition
+            const minSize = 0.1;
+            const maxSize = 0.5;
+            targetSize = normalizedSDNN * (maxSize - minSize) + minSize;
 
-            particles.material.uniforms.uSize.value = updatedSize;
-            sizeController.setValue(updatedSize);
+            // Update GUI instantly so the user sees the target value
+            sizeController.setValue(targetSize);
 
             // Update the "Current SDNN" text
             const sdnnValueElement = document.getElementById('sdnn-value');
             if (sdnnValueElement) {
-                sdnnValueElement.innerText = avgSDNN.toFixed(2); // Display the raw SDNN value with two decimal places
+                sdnnValueElement.innerText = avgSDNN.toFixed(2);
             }
 
-            console.log(`Updated Average SDNN to: ${avgSDNN} (Normalized: ${normalizedSDNN}, uSize: ${updatedSize})`);
+            console.log(`Updated SDNN: ${avgSDNN} | Normalized: ${normalizedSDNN} | uSize: ${targetSize} | uFlowFieldInfluence: ${updatedFlowFieldInfluence}`);
         })
         .catch(error => console.error('Error fetching average SDNN:', error));
 }
+
+
+
+
 fetchAverageSDNN(10); // Initial call
 setInterval(() => fetchAverageSDNN(10), 2000);
 
@@ -335,31 +373,68 @@ gui.add(debugObject, 'toggleFullscreen').name('Toggle Fullscreen');
 const clock = new THREE.Clock()
 let previousTime = 0
 
-const tick = () =>
-{
-    const elapsedTime = clock.getElapsedTime()
-    const deltaTime = elapsedTime - previousTime
-    previousTime = elapsedTime
+//rotation debug
+debugObject.autoRotate = false; // Default: Auto-rotation is ON
+debugObject.rotationSpeed = 0.05;
+debugObject.rotationRadius = 69.6;
+gui.add(debugObject, 'rotationSpeed').min(0).max(3).step(0.01).name('Rotation Speed');
+gui.add(debugObject, 'rotationRadius').min(10).max(100).step(0.1).name('Rotation Radius');
+gui.add(debugObject, 'autoRotate').name('Auto Rotate');
 
-    // Update controls
-    controls.update()
+// sdnn debug
+debugObject.hrvLowThreshold = 50;  // Default low SDNN threshold
+debugObject.hrvHighThreshold = 150; // Default high SDNN threshold
+gui.add(debugObject, 'hrvLowThreshold').min(10).max(200).step(1).name('Stressed Threshold');
+gui.add(debugObject, 'hrvHighThreshold').min(10).max(200).step(1).name('Not Stressed Threshold');
 
-    //gpgpu update
-    gpgpu.particlesVariable.material.uniforms.uTime.value = elapsedTime
+// Show/Hide Current SDNN
+debugObject.showSDNN = true; // Default: Show SDNN
+gui.add(debugObject, 'showSDNN').name('Show SDNN').onChange((value) => {
+    const sdnnContainer = document.getElementById('current-sdnn');
+    if (sdnnContainer) {
+        sdnnContainer.style.display = value ? 'block' : 'none';
+    } else {
+        console.warn('SDNN container not found');
+    }
+});
 
-    gpgpu.particlesVariable.material.uniforms.uDeltaTime.value = deltaTime
-    gpgpu.computation.compute()
 
-    //update uniform
-    particles.material.uniforms.uParticlesTexture.value = gpgpu.computation.getCurrentRenderTarget(gpgpu.particlesVariable).texture
+const tick = () => {
+    const elapsedTime = clock.getElapsedTime();
+    const deltaTime = elapsedTime - previousTime;
+    previousTime = elapsedTime;
+
+    // Update controls (Only update when NOT auto-rotating)
+    if (!debugObject.autoRotate) {
+        controls.update();
+    }
+
+    // Smoothly transition uSize (lerp)
+    particles.material.uniforms.uSize.value += (targetSize - particles.material.uniforms.uSize.value) * lerpFactor;
+
+    // Rotate the camera around the object only if autoRotate is enabled
+    if (debugObject.autoRotate) {
+        camera.position.x = Math.sin(elapsedTime * debugObject.rotationSpeed) * debugObject.rotationRadius;
+        camera.position.z = Math.cos(elapsedTime * debugObject.rotationSpeed) * debugObject.rotationRadius;
+        camera.lookAt(scene.position);
+    }
+
+    // GPGPU update
+    gpgpu.particlesVariable.material.uniforms.uTime.value = elapsedTime;
+    gpgpu.particlesVariable.material.uniforms.uDeltaTime.value = deltaTime;
+    gpgpu.computation.compute();
+
+    // Update uniform
+    particles.material.uniforms.uParticlesTexture.value = gpgpu.computation.getCurrentRenderTarget(gpgpu.particlesVariable).texture;
 
     // Render normal scene
-    renderer.render(scene, camera)
-
-    //log time and utime
+    renderer.render(scene, camera);
 
     // Call tick again on the next frame
-    window.requestAnimationFrame(tick)
-}
+    window.requestAnimationFrame(tick);
+};
+
+
 
 tick()
+
