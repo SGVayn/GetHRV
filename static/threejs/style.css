@@ -17,3 +17,25 @@ body
     left: 0;
     outline: none;
 }
+
+.lil-gui {
+    transition: opacity 0.5s ease-in-out;
+}
+
+#current-sdnn {
+    position: fixed;
+    top: 10px;
+    left: 10px;
+    font-family: 'Arial', sans-serif; /* Or your desired font */
+    font-size: 24px;
+    font-weight: bold;
+    color: #b0e7ff !important; /* Ensure visibility */
+    z-index: 9999; /* Keep it on top */
+}
+
+:fullscreen #current-sdnn {
+    position: fixed;
+    z-index: 9999;
+}
+
+

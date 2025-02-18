@@ -28,3 +28,7 @@ tr:nth-child(even) {
 tr:hover {
     background-color: #ddd;
 }
+
+.lil-gui {
+    transition: opacity 0.5s ease-in-out;
+}
