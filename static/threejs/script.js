@@ -132,7 +132,7 @@ const renderer = new THREE.WebGLRenderer({
 renderer.setSize(sizes.width, sizes.height)
 renderer.setPixelRatio(sizes.pixelRatio)
 
-debugObject.BackgroundColor = '#29191f'
+debugObject.BackgroundColor = '#0e0f0d'
 renderer.setClearColor(debugObject.BackgroundColor)
 
 //load model
