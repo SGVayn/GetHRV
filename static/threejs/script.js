@@ -271,11 +271,10 @@ const bloomPass = new UnrealBloomPass(
     0.4,  //radius
     0.85  //threshold
 );
-
-// ✅ Set bloom effect values explicitly (Fix)
-bloomPass.threshold = 0.61;
+// set initial - doesnt seems to load without
+bloomPass.threshold = 0.41;
 bloomPass.strength = 1.5;
-bloomPass.radius = 0.4;
+bloomPass.radius = 0.33;
 
 // create the composer (post-processing pipeline)
 const composer = new EffectComposer(renderer);
@@ -286,9 +285,9 @@ composer.addPass(bloomPass);
 renderer.toneMapping = THREE.REINHARD_TONE_MAPPING;
 renderer.toneMappingExposure = 1.5;
 
-debugObject.bloomThreshold = 0.5;
+debugObject.bloomThreshold = 0.41;
 debugObject.bloomStrength = 1.5;
-debugObject.bloomRadius = 0.4;
+debugObject.bloomRadius = 0.33;
 
 const bloomFolder = gui.addFolder('Bloom Effects');
 bloomFolder.close();
@@ -314,7 +313,37 @@ flowFieldFolder.add(gpgpu.particlesVariable.material.uniforms.uFlowFieldFrequenc
 let targetSize = 0.1; // used in upcoming lerp function
 let lerpFactor = 0.03; // transition speed
 
+
+
+
+let simulatedSDNN = 100;
 function fetchAverageSDNN(numEntries = 10) {
+
+    if (debugObject.simulateSDNN) {
+    const step = Math.floor(Math.random() * 9) + 1;
+    let direction;
+    if (simulatedSDNN >= 150) {
+        direction = -1;
+    } else if (simulatedSDNN <= 50) {
+        direction = 1;
+    } else {
+        direction = Math.random() < 0.5 ? -1 : 1;
+    }
+    
+    let newSimulatedSDNN = simulatedSDNN + direction * step;
+
+    if (newSimulatedSDNN > 150) {
+        newSimulatedSDNN = 150;
+    } else if (newSimulatedSDNN < 50) {
+        newSimulatedSDNN = 50;
+    }
+
+    simulatedSDNN = newSimulatedSDNN;
+    processSDNN(simulatedSDNN);
+    return;
+}
+
+    // Otherwise, fetch from the API as before
     fetch(`/hrv/api/latest-sdnn/?num_entries=${numEntries}`)
         .then(response => {
             if (!response.ok) {
@@ -324,46 +353,46 @@ function fetchAverageSDNN(numEntries = 10) {
         })
         .then(data => {
             const avgSDNN = data.average_sdnn;
-
-            // get sdnn thresholds from the GUI
-            const hrvLowThreshold = debugObject.hrvLowThreshold;
-            const hrvHighThreshold = debugObject.hrvHighThreshold;
-
-            // normalise sdnn
-            let normalizedSDNN;
-            if (avgSDNN <= hrvLowThreshold) {
-                normalizedSDNN = 0; //  bad sdnn
-            } else if (avgSDNN >= hrvHighThreshold) {
-                normalizedSDNN = 1; //  good sdnn
-            } else {
-                normalizedSDNN = (avgSDNN - hrvLowThreshold) / (hrvHighThreshold - hrvLowThreshold);
-            }
-
-            // scale flow field influence (0.6 → 0)
-            const updatedFlowFieldInfluence = (1 - normalizedSDNN) * 0.6;
-            gpgpu.particlesVariable.material.uniforms.uFlowFieldInfluence.value = updatedFlowFieldInfluence;
-            flowFieldInfluenceController.setValue(updatedFlowFieldInfluence);
-
-            // calculate new target size for smooth transition
-            const minSize = 0.1;
-            const maxSize = 0.5;
-            targetSize = normalizedSDNN * (maxSize - minSize) + minSize;
-
-            // update GUI
-            // sizeController.setValue(targetSize);
-
-            // ppdate current SDNN text
-            const sdnnValueElement = document.getElementById('sdnn-value');
-            if (sdnnValueElement) {
-                sdnnValueElement.innerText = avgSDNN.toFixed(2);
-            }
-            document.title = `SDNN: ${avgSDNN.toFixed(2)}`;
-
-            updateFavicon(normalizedSDNN);
-
-            console.log(`Updated SDNN: ${avgSDNN} | Normalized: ${normalizedSDNN} | uSize: ${targetSize} | uFlowFieldInfluence: ${updatedFlowFieldInfluence}`);
+            processSDNN(avgSDNN);
         })
         .catch(error => console.error('Error fetching average SDNN:', error));
+}
+
+// 4. Extract the SDNN processing into a helper function:
+function processSDNN(avgSDNN) {
+    const hrvLowThreshold = debugObject.hrvLowThreshold;
+    const hrvHighThreshold = debugObject.hrvHighThreshold;
+
+    // Normalize SDNN
+    let normalizedSDNN;
+    if (avgSDNN <= hrvLowThreshold) {
+        normalizedSDNN = 0; // bad SDNN
+    } else if (avgSDNN >= hrvHighThreshold) {
+        normalizedSDNN = 1; // good SDNN
+    } else {
+        normalizedSDNN = (avgSDNN - hrvLowThreshold) / (hrvHighThreshold - hrvLowThreshold);
+    }
+
+    // Scale flow field influence (0.6 → 0)
+    const updatedFlowFieldInfluence = (1 - normalizedSDNN) * 0.6;
+    gpgpu.particlesVariable.material.uniforms.uFlowFieldInfluence.value = updatedFlowFieldInfluence;
+    flowFieldInfluenceController.setValue(updatedFlowFieldInfluence);
+
+    // Calculate new target size for smooth transition
+    const minSize = 0.1;
+    const maxSize = 0.5;
+    targetSize = normalizedSDNN * (maxSize - minSize) + minSize;
+
+    // Update SDNN text and document title
+    const sdnnValueElement = document.getElementById('sdnn-value');
+    if (sdnnValueElement) {
+        sdnnValueElement.innerText = avgSDNN.toFixed(2);
+    }
+    document.title = `SDNN: ${avgSDNN.toFixed(2)}`;
+
+    updateFavicon(normalizedSDNN);
+
+    console.log(`Updated SDNN: ${avgSDNN} | Normalized: ${normalizedSDNN} | uSize: ${targetSize} | uFlowFieldInfluence: ${updatedFlowFieldInfluence}`);
 }
 
 function updateFavicon(normalizedSDNN) {
@@ -414,6 +443,9 @@ debugObject.hrvHighThreshold = 150;
 const stressFolder = gui.addFolder('Stress Settings').close();
 stressFolder.add(debugObject, 'hrvLowThreshold').min(10).max(200).step(1).name('Stressed Threshold');
 stressFolder.add(debugObject, 'hrvHighThreshold').min(10).max(200).step(1).name('Not Stressed Threshold');
+//sim changes
+debugObject.simulateSDNN = false;
+stressFolder.add(debugObject, 'simulateSDNN').name("Simulate SDNN changes");
 
 debugObject.showSDNN = true;
 stressFolder.add(debugObject, 'showSDNN').name('Show SDNN').onChange(value => {
