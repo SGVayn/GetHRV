@@ -159,7 +159,7 @@ gpgpu.size = Math.ceil(Math.sqrt(baseGeometry.count)) //make a square texture fo
 gpgpu.computation = new GPUComputationRenderer(gpgpu.size, gpgpu.size, renderer)
 
 //base particles
-const baseParticlesTexture = gpgpu.computation.createTexture() //bunch of 0s in an array 
+const baseParticlesTexture = gpgpu.computation.createTexture() //bunch of 0s in an array
 
 for (let i = 0; i < baseGeometry.count; i++)
 {
@@ -243,7 +243,7 @@ particles.material = new THREE.ShaderMaterial({
         uSize: new THREE.Uniform(0.05),
         uResolution: new THREE.Uniform(new THREE.Vector2(sizes.width * sizes.pixelRatio, sizes.height * sizes.pixelRatio)),
         uParticlesTexture: new THREE.Uniform()
-    
+
     }
 })
 
@@ -312,7 +312,7 @@ flowFieldFolder.add(gpgpu.particlesVariable.material.uniforms.uFlowFieldFrequenc
 
 
 let targetSize = 0.1; // used in upcoming lerp function
-let lerpFactor = 0.01; // transition speed
+let lerpFactor = 0.03; // transition speed
 
 function fetchAverageSDNN(numEntries = 10) {
     fetch(`/hrv/api/latest-sdnn/?num_entries=${numEntries}`)
@@ -350,7 +350,7 @@ function fetchAverageSDNN(numEntries = 10) {
             targetSize = normalizedSDNN * (maxSize - minSize) + minSize;
 
             // update GUI
-            sizeController.setValue(targetSize);
+            // sizeController.setValue(targetSize);
 
             // ppdate current SDNN text
             const sdnnValueElement = document.getElementById('sdnn-value');
@@ -448,8 +448,9 @@ const tick = () => {
 
     // smooth transition of uSize
     particles.material.uniforms.uSize.value += (targetSize - particles.material.uniforms.uSize.value) * lerpFactor;
+    sizeController.setValue(particles.material.uniforms.uSize.value);
 
-    // rotate camera when enabled
+    // rotate camera
     if (debugObject.autoRotate) {
         camera.position.x = Math.sin(elapsedTime * debugObject.rotationSpeed) * debugObject.rotationRadius;
         camera.position.z = Math.cos(elapsedTime * debugObject.rotationSpeed) * debugObject.rotationRadius;
@@ -461,13 +462,14 @@ const tick = () => {
     gpgpu.particlesVariable.material.uniforms.uDeltaTime.value = deltaTime;
     gpgpu.computation.compute();
 
-    // update particle texture
+    // uppdate particle texture
     particles.material.uniforms.uParticlesTexture.value = gpgpu.computation.getCurrentRenderTarget(gpgpu.particlesVariable).texture;
 
     composer.render();
 
     window.requestAnimationFrame(tick);
 };
+
 
 
 
