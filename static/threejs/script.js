@@ -137,6 +137,13 @@ renderer.setClearColor(debugObject.BackgroundColor)
 
 //load model
 const gltf = await gltfLoader.loadAsync('/static/threejs/models/flowerpot.glb'); //returns a promise js waits till it loads
+
+// "Flowers in Vase" 3D model by Michael Douglass
+// Licensed under Creative Commons Attribution 4.0 (CC BY 4.0)
+// Original model: https://sketchfab.com/3d-models/flowers-in-vase-b1047276fc7f4421b5f695ad9ff59e72
+// License: https://creativecommons.org/licenses/by/4.0/
+// Modifications: baked texture to vertex colors only, no modifications of original geometry
+
 // const gltf = await gltfLoader.loadAsync('/static/threejs/models/polar_bear.glb');
 // const gltf = await gltfLoader.loadAsync('/static/threejs/models/chameleon.glb');
 // const gltf = await gltfLoader.loadAsync('/static/threejs/models/rose.glb');
@@ -447,7 +454,7 @@ stressFolder.add(debugObject, 'hrvHighThreshold').min(10).max(200).step(1).name(
 debugObject.simulateSDNN = false;
 stressFolder.add(debugObject, 'simulateSDNN').name("Simulate SDNN changes");
 
-debugObject.showSDNN = true;
+debugObject.showSDNN = false;
 stressFolder.add(debugObject, 'showSDNN').name('Show SDNN').onChange(value => {
     const sdnnContainer = document.getElementById('current-sdnn');
     if (sdnnContainer) {
@@ -466,6 +473,8 @@ debugObject.toggleFullscreen = () => {
     }
 };
 gui.add(debugObject, 'toggleFullscreen').name('Toggle Fullscreen');
+
+
 
 
 
