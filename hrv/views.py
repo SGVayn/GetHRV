@@ -10,6 +10,7 @@ from django.forms.models import model_to_dict
 
 
 
+
 ppg_data = deque()
 ppg = []
 measures = {}
@@ -27,6 +28,7 @@ def index(request):
 # 接口函数
 import sqlite3
 
+## recieve the data from the watch
 def post(request):
  global ppg_data, ppg, sampling_rate
  global measures
@@ -99,5 +101,47 @@ def visual(request):
     }
     return render(request, 'visual.html', context)
 
+
+
+
+
+# def get_latest_sdnn(request):
+#     # print("get_latest_sdnn view is being executed")
+#     latest_measure = Measures.objects.order_by('-timeStamp').first()
+#     latest_sdnn = latest_measure.sdnn if latest_measure else 0.445
+#     return JsonResponse({'latest_sdnn': latest_sdnn})
+
+from django.db.models import Avg
+
+
+def get_latest_sdnn(request):
+    # Get the number of entries to average from query parameters (default to 10)
+    num_entries = int(request.GET.get('num_entries', 10))
+
+    # Fetch the latest `num_entries` SDNN values
+    latest_measures = Measures.objects.order_by('-timeStamp')[:num_entries]
+
+    # Calculate the average SDNN
+    if latest_measures.exists():
+        sdnn_values = [measure.sdnn for measure in latest_measures if measure.sdnn is not None]
+        average_sdnn = sum(sdnn_values) / len(sdnn_values) if sdnn_values else 0.445
+    else:
+        average_sdnn = 0.445  # Default fallback value
+
+    return JsonResponse({'average_sdnn': average_sdnn})
+
+
+def threejs_page(request):
+    # Get the latest Measures instance
+    latest_measure = Measures.objects.order_by('-timeStamp').first()
+
+    # Extract the SDNN value, default to None if no instance exists
+    latest_sdnn = latest_measure.sdnn if latest_measure else None
+
+    # Pass the latest SDNN value to the template
+    context = {
+        'latest_sdnn': latest_sdnn
+    }
+    return render(request, 'index.html', context)
 
 
