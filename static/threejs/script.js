@@ -136,19 +136,23 @@ debugObject.BackgroundColor = '#0e0f0d'
 renderer.setClearColor(debugObject.BackgroundColor)
 
 //load model
-const gltf = await gltfLoader.loadAsync('/static/threejs/models/flowerpot.glb'); //returns a promise js waits till it loads
+// const gltf = await gltfLoader.loadAsync('/static/threejs/models/flowerpot.glb'); //returns a promise js waits till it loads
 
 // "Flowers in Vase" 3D model by Michael Douglass
 // Licensed under Creative Commons Attribution 4.0 (CC BY 4.0)
 // Original model: https://sketchfab.com/3d-models/flowers-in-vase-b1047276fc7f4421b5f695ad9ff59e72
 // License: https://creativecommons.org/licenses/by/4.0/
 // Modifications: baked texture to vertex colors only, no modifications of original geometry
+// const gltf = await gltfLoader.loadAsync('/static/threejs/models/flowerpot.glb'); //returns a promise js waits till it loads
+// const gltf = await gltfLoader.loadAsync('/static/threejs/models/model.glb');
 
 // const gltf = await gltfLoader.loadAsync('/static/threejs/models/polar_bear.glb');
 // const gltf = await gltfLoader.loadAsync('/static/threejs/models/chameleon.glb');
 // const gltf = await gltfLoader.loadAsync('/static/threejs/models/rose.glb');
-// const gltf = await gltfLoader.loadAsync('/static/threejs/models/model.glb');
+// const gltf = await gltfLoader.loadAsync('/static/threejs/models/bulbasaur.glb');
 
+//test
+// const gltf = await gltfLoader.loadAsync('/static/threejs/models/testoctopus.glb');
 
 
 //better using callback function
