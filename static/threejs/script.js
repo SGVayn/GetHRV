@@ -136,7 +136,7 @@ debugObject.BackgroundColor = '#0e0f0d'
 renderer.setClearColor(debugObject.BackgroundColor)
 
 //load model
-// const gltf = await gltfLoader.loadAsync('/static/threejs/models/flowerpot.glb'); //returns a promise js waits till it loads
+const gltf = await gltfLoader.loadAsync('/static/threejs/models/flowerpot.glb'); //returns a promise js waits till it loads
 
 // "Flowers in Vase" 3D model by Michael Douglass
 // Licensed under Creative Commons Attribution 4.0 (CC BY 4.0)
