@@ -8,10 +8,10 @@ venv/
 envi/
 
 # PyCharm project settings
-#.idea/
+.idea/
 
 # Django secret key
-*.env
+*.env/
 
 # Static and media files (if you don't want to track them)
 media/
