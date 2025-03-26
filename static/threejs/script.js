@@ -4,13 +4,12 @@ import { GLTFLoader } from '/static/threejs/js/GLTFLoader.js';
 import { DRACOLoader } from '/static/threejs/js/DRACOLoader.js';
 import GUI from '/static/threejs/js/lil-gui.module.min.js';
 import { GPUComputationRenderer } from '/static/threejs/js/GPUComputationRenderer.js';
+// console.log(GPUComputationRenderer);
 
 // for post-processing
 import { EffectComposer } from '/static/threejs/js/jsm/postprocessing/EffectComposer.js';
 import { RenderPass } from '/static/threejs/js/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from '/static/threejs/js/jsm/postprocessing/UnrealBloomPass.js';
-
-
 
 
 
@@ -32,14 +31,6 @@ console.log('Vertex Shader:', particlesVertexShader);
 console.log('Fragment Shader:', particlesFragmentShader);
 console.log('GPGPU Shader:', gpgpuParticlesShader);
 
-
-
-// console.log(GPUComputationRenderer);
-
-
-/**
- * Base
- */
 // debug ui
 const gui = new GUI({ width: 340 })
 const debugObject = {}
@@ -72,23 +63,12 @@ hideGuiTimeout = setTimeout(() => {
 
 
 
-// canvas
-const canvas = document.querySelector('canvas.webgl')
-// scene
-const scene = new THREE.Scene()
-// loaders
-const dracoLoader = new DRACOLoader()
-dracoLoader.setDecoderPath('/static/threejs/draco/');
-const gltfLoader = new GLTFLoader()
-gltfLoader.setDRACOLoader(dracoLoader)
-
 // window sizes for resizing
 const sizes = {
     width: window.innerWidth,
     height: window.innerHeight,
     pixelRatio: Math.min(window.devicePixelRatio, 2)
 }
-
 window.addEventListener('resize', () =>
 {
     // update sizes
@@ -108,17 +88,10 @@ window.addEventListener('resize', () =>
     renderer.setPixelRatio(sizes.pixelRatio)
 })
 
-/**
- * Camera
- */
-// base camera
-const camera = new THREE.PerspectiveCamera(35, sizes.width / sizes.height, 0.1, 5000)
-camera.position.set(4.5, 4, 70 )
-scene.add(camera)
-
-// controls
-const controls = new OrbitControls(camera, canvas)
-controls.enableDamping = true
+// canvas
+const canvas = document.querySelector('canvas.webgl')
+// scene
+const scene = new THREE.Scene()
 
 // renderer
 const renderer = new THREE.WebGLRenderer({
@@ -130,6 +103,23 @@ renderer.setPixelRatio(sizes.pixelRatio)
 
 debugObject.BackgroundColor = '#090108'   // 090108 also nice
 renderer.setClearColor(debugObject.BackgroundColor)
+
+
+// base camera
+const camera = new THREE.PerspectiveCamera(35, sizes.width / sizes.height, 0.1, 5000)
+camera.position.set(4.5, 4, 70 )
+scene.add(camera)
+
+// controls
+const controls = new OrbitControls(camera, canvas)
+controls.enableDamping = true
+
+
+// loaders
+const dracoLoader = new DRACOLoader()
+dracoLoader.setDecoderPath('/static/threejs/draco/');
+const gltfLoader = new GLTFLoader()
+gltfLoader.setDRACOLoader(dracoLoader)
 
 //load model
 const gltf = await gltfLoader.loadAsync('/static/threejs/models/flowerpot.glb'); //returns a promise js waits till it loads
@@ -152,8 +142,8 @@ const baseGeometry= {}
 baseGeometry.instance = gltf.scene.children[0].geometry //load the first geometry
 baseGeometry.count = baseGeometry.instance.attributes.position.count  //number of vertices in the geometry
 
-//GPU compute
 
+//GPU compute
 //setup
 const gpgpu = {}
 gpgpu.size = Math.ceil(Math.sqrt(baseGeometry.count)) //make a square texture for the FBO
@@ -200,6 +190,7 @@ gpgpu.debug = new THREE.Mesh(
 gpgpu.debug.visible = false //enable to see the texture in the scene
 gpgpu.debug.position.x = 3
 scene.add(gpgpu.debug)
+
 
 
 
@@ -251,11 +242,6 @@ particles.material = new THREE.ShaderMaterial({
 particles.points = new THREE.Points(particles.geometry, particles.material)
 scene.add(particles.points)
 
-// background color on the gui
-gui.addColor(debugObject, 'BackgroundColor').onChange(() => { renderer.setClearColor(debugObject.BackgroundColor) })
-
-
-
 
 // post-processing
 // render pass
@@ -286,21 +272,7 @@ debugObject.bloomThreshold = 0.41;
 debugObject.bloomStrength = 1.5;
 debugObject.bloomRadius = 0.33;
 
-const bloomFolder = gui.addFolder('Bloom Effects');
-bloomFolder.close();
-bloomFolder.add(debugObject, 'bloomThreshold').name("Bloom Threshold").min(0).max(1).step(0.01).onChange(value => {bloomPass.threshold = value;});
-bloomFolder.add(debugObject, 'bloomStrength').name("Bloom Strength").min(0).max(3).step(0.1).onChange(value => {bloomPass.strength = value;});
-bloomFolder.add(debugObject, 'bloomRadius').name("Bloom Radius").min(0).max(1).step(0.01).onChange(value => {bloomPass.radius = value;});
 
-
-
-//gui for flowfield stuff
-const flowFieldFolder = gui.addFolder('Flow Field');
-flowFieldFolder.close()
-const flowFieldInfluenceController = flowFieldFolder.add(gpgpu.particlesVariable.material.uniforms.uFlowFieldInfluence, 'value').min(0).max(1).step(0.001).name('Flow Field Intensity');
-const sizeController = flowFieldFolder.add(particles.material.uniforms.uSize, 'value').min(0.01).max(0.5).step(0.001).name('Particle Size');
-flowFieldFolder.add(gpgpu.particlesVariable.material.uniforms.uFlowFieldStrength, 'value').min(0).max(10).step(0.001).name('Flow Field Strength');
-flowFieldFolder.add(gpgpu.particlesVariable.material.uniforms.uFlowFieldFrequency, 'value').min(0).max(2).step(0.001).name('Flow Field Frequency');
 
 
 // used in the upcoming lerp function to transition smoothly
@@ -321,7 +293,7 @@ function fetchAverageSDNN(numEntries = 10) {
     } else {
         direction = Math.random() < 0.5 ? -1 : 1;
     }
-    
+
     let newSimulatedSDNN = simulatedSDNN + direction * step;
 
     if (newSimulatedSDNN > 150) {
@@ -414,9 +386,27 @@ setInterval(() => fetchAverageSDNN(10), 2000);
 
 
 
+//background color on the gui
+gui.addColor(debugObject, 'BackgroundColor').onChange(() => { renderer.setClearColor(debugObject.BackgroundColor) })
+
+//gui for bloom effects
+const bloomFolder = gui.addFolder('Bloom Effects');
+bloomFolder.close();
+bloomFolder.add(debugObject, 'bloomThreshold').name("Bloom Threshold").min(0).max(1).step(0.01).onChange(value => {bloomPass.threshold = value;});
+bloomFolder.add(debugObject, 'bloomStrength').name("Bloom Strength").min(0).max(3).step(0.1).onChange(value => {bloomPass.strength = value;});
+bloomFolder.add(debugObject, 'bloomRadius').name("Bloom Radius").min(0).max(1).step(0.01).onChange(value => {bloomPass.radius = value;});
 
 
-//rotation debug
+//gui for flowfield stuff
+const flowFieldFolder = gui.addFolder('Flow Field');
+flowFieldFolder.close()
+const flowFieldInfluenceController = flowFieldFolder.add(gpgpu.particlesVariable.material.uniforms.uFlowFieldInfluence, 'value').min(0).max(1).step(0.001).name('Flow Field Intensity');
+const sizeController = flowFieldFolder.add(particles.material.uniforms.uSize, 'value').min(0.01).max(0.5).step(0.001).name('Particle Size');
+flowFieldFolder.add(gpgpu.particlesVariable.material.uniforms.uFlowFieldStrength, 'value').min(0).max(10).step(0.001).name('Flow Field Strength');
+flowFieldFolder.add(gpgpu.particlesVariable.material.uniforms.uFlowFieldFrequency, 'value').min(0).max(2).step(0.001).name('Flow Field Frequency');
+
+
+//gui for rotation
 debugObject.autoRotate = false;
 debugObject.rotationSpeed = 0.05;
 debugObject.rotationRadius = 69.6;
@@ -426,7 +416,7 @@ rotationFolder.add(debugObject, 'rotationRadius').min(10).max(100).step(0.1).nam
 rotationFolder.add(debugObject, 'autoRotate').name('Auto Rotate');
 
 
-// sdnn debug
+//gui for stress settings
 debugObject.hrvLowThreshold = 50;
 debugObject.hrvHighThreshold = 150;
 const stressFolder = gui.addFolder('Stress Settings').close();
@@ -446,7 +436,7 @@ stressFolder.add(debugObject, 'showSDNN').name('Show SDNN').onChange(value => {
     }
 });
 
-// fullscreen button
+//gui for fullscreen
 debugObject.toggleFullscreen = () => {
     if (!document.fullscreenElement) {
         canvas.requestFullscreen();
@@ -457,7 +447,7 @@ debugObject.toggleFullscreen = () => {
 gui.add(debugObject, 'toggleFullscreen').name('Toggle Fullscreen');
 
 
-
+//animation loop
 // used to update based on time instead of per frame so that the displays animation looks same speed across different FPS
 const clock = new THREE.Clock()
 let previousTime = 0
