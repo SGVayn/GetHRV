@@ -1,12 +1,18 @@
 @echo off
 
 echo Creating virtual environment...
-python -m venv envi
+py -3.10 -m venv envi
 
 echo Activating virtual environment...
 call envi\Scripts\activate
 
-echo Installing requirements...
+echo Upgrading pip...
+python -m pip install --upgrade pip
+
+echo Installing Django 5.1.2...
+pip install Django==5.1.2
+
+echo Installing all requirements...
 pip install -r requirements.txt
 
 echo Applying migrations...
@@ -15,6 +21,6 @@ python manage.py migrate
 echo Creating superuser...
 python manage.py createsuperuser
 
-echo Done!
+echo Setup complete!
 echo To run the server:
-echo set DJANGO_SETTINGS_MODULE=GetHRV.mysite.settings && python manage.py runserver 5555
+echo call envi\Scripts\activate && python manage.py runserver 0.0.0.0:5555

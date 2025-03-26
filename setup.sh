@@ -1,12 +1,12 @@
 #!/bin/bash
 
-echo "Creating virtual environment..."
-python3 -m venv envi
+echo "Upgrading pip..."
+python -m pip install --upgrade pip
 
-echo "Activating virtual environment..."
-source envi/bin/activate
+echo "Installing Django 5.1.2..."
+pip install Django==5.1.2
 
-echo "Installing requirements..."
+echo "Installing all requirements..."
 pip install -r requirements.txt
 
 echo "Applying migrations..."
@@ -15,7 +15,8 @@ python manage.py migrate
 echo "Creating superuser..."
 python manage.py createsuperuser
 
-echo "Done!"
-echo "To run the project:"
-echo "source envi/bin/activate"
-echo "DJANGO_SETTINGS_MODULE=GetHRV.mysite.settings python manage.py runserver 5555"
+echo "Setup complete!"
+echo "To run the server:"
+echo "source envi/bin/activate && python manage.py runserver 0.0.0.0:5555"
+
+
