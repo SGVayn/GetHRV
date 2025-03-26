@@ -82,9 +82,7 @@ dracoLoader.setDecoderPath('/static/threejs/draco/');
 const gltfLoader = new GLTFLoader()
 gltfLoader.setDRACOLoader(dracoLoader)
 
-/**
- * Sizes
- */
+// window sizes for resizing
 const sizes = {
     width: window.innerWidth,
     height: window.innerHeight,
@@ -122,9 +120,7 @@ scene.add(camera)
 const controls = new OrbitControls(camera, canvas)
 controls.enableDamping = true
 
-/**
- * Renderer
- */
+// renderer
 const renderer = new THREE.WebGLRenderer({
     canvas: canvas,
     antialias: true,
@@ -132,7 +128,7 @@ const renderer = new THREE.WebGLRenderer({
 renderer.setSize(sizes.width, sizes.height)
 renderer.setPixelRatio(sizes.pixelRatio)
 
-debugObject.BackgroundColor = '#0e0f0d'
+debugObject.BackgroundColor = '#090108'   // 090108 also nice
 renderer.setClearColor(debugObject.BackgroundColor)
 
 //load model
@@ -143,24 +139,18 @@ const gltf = await gltfLoader.loadAsync('/static/threejs/models/flowerpot.glb');
 // Original model: https://sketchfab.com/3d-models/flowers-in-vase-b1047276fc7f4421b5f695ad9ff59e72
 // License: https://creativecommons.org/licenses/by/4.0/
 // Modifications: baked texture to vertex colors only, no modifications of original geometry
-// const gltf = await gltfLoader.loadAsync('/static/threejs/models/flowerpot.glb'); //returns a promise js waits till it loads
-// const gltf = await gltfLoader.loadAsync('/static/threejs/models/model.glb');
 
+// Other working models - might not be included in the final project due to size contraints on moodle upload.
+// const gltf = await gltfLoader.loadAsync('/static/threejs/models/model.glb');
 // const gltf = await gltfLoader.loadAsync('/static/threejs/models/polar_bear.glb');
 // const gltf = await gltfLoader.loadAsync('/static/threejs/models/chameleon.glb');
 // const gltf = await gltfLoader.loadAsync('/static/threejs/models/rose.glb');
-// const gltf = await gltfLoader.loadAsync('/static/threejs/models/bulbasaur.glb');
 
-//test
-// const gltf = await gltfLoader.loadAsync('/static/threejs/models/testoctopus.glb');
-
-
-//better using callback function
 
 //base geometry
 const baseGeometry= {}
-baseGeometry.instance = gltf.scene.children[0].geometry //load boat 1 hour 30 in
-baseGeometry.count = baseGeometry.instance.attributes.position.count //how many vertices
+baseGeometry.instance = gltf.scene.children[0].geometry //load the first geometry
+baseGeometry.count = baseGeometry.instance.attributes.position.count  //number of vertices in the geometry
 
 //GPU compute
 
@@ -176,7 +166,7 @@ for (let i = 0; i < baseGeometry.count; i++)
 {
     const i3 = i * 3
     const i4 = i * 4
-//position based on geometry
+// position based on geometry - pure magic
     baseParticlesTexture.image.data[i4 +0] = baseGeometry.instance.attributes.position.array[i3+0]
     baseParticlesTexture.image.data[i4 +1] = baseGeometry.instance.attributes.position.array[i3+1]
     baseParticlesTexture.image.data[i4 +2] = baseGeometry.instance.attributes.position.array[i3+2]
@@ -200,7 +190,6 @@ gpgpu.particlesVariable.material.uniforms.uFlowFieldFrequency = new THREE.Unifor
 //init
 gpgpu.computation.init()
 
-
 //debug
 gpgpu.debug = new THREE.Mesh(
     new THREE.PlaneGeometry(3,3),
@@ -208,13 +197,13 @@ gpgpu.debug = new THREE.Mesh(
         map: gpgpu.computation.getCurrentRenderTarget(gpgpu.particlesVariable).texture
     }) //fbo
 )
-gpgpu.debug.visible = false
+gpgpu.debug.visible = false //enable to see the texture in the scene
 gpgpu.debug.position.x = 3
 scene.add(gpgpu.debug)
 
-/**
- * Particles
- */
+
+
+// create particles
 const particles = {}
 
 //geometry
@@ -237,7 +226,7 @@ for(let y = 0; y < gpgpu.size; y++)
         sizesArray[i] = Math.random()
     }
 }
-console.log("GUI Controllers:", gui.__controllers);
+// console.log("GUI Controllers:", gui.__controllers);
 
 particles.geometry = new THREE.BufferGeometry()
 particles.geometry.setDrawRange(0, baseGeometry.count)
@@ -245,7 +234,7 @@ particles.geometry.setAttribute('aParticlesUv', new THREE.BufferAttribute(partic
 particles.geometry.setAttribute('aColor' , baseGeometry.instance.attributes.color) //to send to vertex shader
 particles.geometry.setAttribute('aSize', new THREE.BufferAttribute(sizesArray, 1)) //to send to vertex shader only 1 value needed
 
-// material
+// material - shader
 particles.material = new THREE.ShaderMaterial({
     vertexShader: particlesVertexShader,
     fragmentShader: particlesFragmentShader,
@@ -262,10 +251,7 @@ particles.material = new THREE.ShaderMaterial({
 particles.points = new THREE.Points(particles.geometry, particles.material)
 scene.add(particles.points)
 
-
-/**
- * Tweaks gui.add(gpgpu.particlesVariable.material.uniforms.uFlowFieldInfluence, 'value').min(0).max(1).step(0.001).name('uFlowFieldInfluence')
- */
+// background color on the gui
 gui.addColor(debugObject, 'BackgroundColor').onChange(() => { renderer.setClearColor(debugObject.BackgroundColor) })
 
 
@@ -302,34 +288,29 @@ debugObject.bloomRadius = 0.33;
 
 const bloomFolder = gui.addFolder('Bloom Effects');
 bloomFolder.close();
-bloomFolder.add(debugObject, 'bloomThreshold').min(0).max(1).step(0.01).onChange(value => {bloomPass.threshold = value;});
-bloomFolder.add(debugObject, 'bloomStrength').min(0).max(3).step(0.1).onChange(value => {bloomPass.strength = value;});
-bloomFolder.add(debugObject, 'bloomRadius').min(0).max(1).step(0.01).onChange(value => {bloomPass.radius = value;});
+bloomFolder.add(debugObject, 'bloomThreshold').name("Bloom Threshold").min(0).max(1).step(0.01).onChange(value => {bloomPass.threshold = value;});
+bloomFolder.add(debugObject, 'bloomStrength').name("Bloom Strength").min(0).max(3).step(0.1).onChange(value => {bloomPass.strength = value;});
+bloomFolder.add(debugObject, 'bloomRadius').name("Bloom Radius").min(0).max(1).step(0.01).onChange(value => {bloomPass.radius = value;});
 
 
-
-
-
-let latestSDNN = 0.445;
 
 //gui for flowfield stuff
 const flowFieldFolder = gui.addFolder('Flow Field');
 flowFieldFolder.close()
-const flowFieldInfluenceController = flowFieldFolder.add(gpgpu.particlesVariable.material.uniforms.uFlowFieldInfluence, 'value').min(0).max(1).step(0.001).name('uFlowFieldInfluence');
-const sizeController = flowFieldFolder.add(particles.material.uniforms.uSize, 'value').min(0.01).max(0.5).step(0.001).name('uSize');
-flowFieldFolder.add(gpgpu.particlesVariable.material.uniforms.uFlowFieldStrength, 'value').min(0).max(10).step(0.001).name('uFlowFieldStrength');
-flowFieldFolder.add(gpgpu.particlesVariable.material.uniforms.uFlowFieldFrequency, 'value').min(0).max(2).step(0.001).name('uFlowFieldFrequency');
+const flowFieldInfluenceController = flowFieldFolder.add(gpgpu.particlesVariable.material.uniforms.uFlowFieldInfluence, 'value').min(0).max(1).step(0.001).name('Flow Field Intensity');
+const sizeController = flowFieldFolder.add(particles.material.uniforms.uSize, 'value').min(0.01).max(0.5).step(0.001).name('Particle Size');
+flowFieldFolder.add(gpgpu.particlesVariable.material.uniforms.uFlowFieldStrength, 'value').min(0).max(10).step(0.001).name('Flow Field Strength');
+flowFieldFolder.add(gpgpu.particlesVariable.material.uniforms.uFlowFieldFrequency, 'value').min(0).max(2).step(0.001).name('Flow Field Frequency');
 
 
-let targetSize = 0.1; // used in upcoming lerp function
+// used in the upcoming lerp function to transition smoothly
+let targetSize = 0.1;
 let lerpFactor = 0.03; // transition speed
 
-
-
-
-let simulatedSDNN = 100;
+let simulatedSDNN = 100; // initial value when simulating SDNN changes is enabled
 function fetchAverageSDNN(numEntries = 10) {
 
+    // if simulating SDNN is enabled, generate random values
     if (debugObject.simulateSDNN) {
     const step = Math.floor(Math.random() * 9) + 1;
     let direction;
@@ -354,7 +335,7 @@ function fetchAverageSDNN(numEntries = 10) {
     return;
 }
 
-    // Otherwise, fetch from the API as before
+    // otherwise, fetch from the database to get real time data
     fetch(`/hrv/api/latest-sdnn/?num_entries=${numEntries}`)
         .then(response => {
             if (!response.ok) {
@@ -369,12 +350,12 @@ function fetchAverageSDNN(numEntries = 10) {
         .catch(error => console.error('Error fetching average SDNN:', error));
 }
 
-// 4. Extract the SDNN processing into a helper function:
+// Helper function to process the fetched SDNN value
 function processSDNN(avgSDNN) {
     const hrvLowThreshold = debugObject.hrvLowThreshold;
     const hrvHighThreshold = debugObject.hrvHighThreshold;
 
-    // Normalize SDNN
+    // normalise the SDNN
     let normalizedSDNN;
     if (avgSDNN <= hrvLowThreshold) {
         normalizedSDNN = 0; // bad SDNN
@@ -384,17 +365,17 @@ function processSDNN(avgSDNN) {
         normalizedSDNN = (avgSDNN - hrvLowThreshold) / (hrvHighThreshold - hrvLowThreshold);
     }
 
-    // Scale flow field influence (0.6 → 0)
+    // scale the flow based on the normalized SDNN
     const updatedFlowFieldInfluence = (1 - normalizedSDNN) * 0.6;
     gpgpu.particlesVariable.material.uniforms.uFlowFieldInfluence.value = updatedFlowFieldInfluence;
     flowFieldInfluenceController.setValue(updatedFlowFieldInfluence);
 
-    // Calculate new target size for smooth transition
+    // calculate new target size for smooth transition
     const minSize = 0.1;
     const maxSize = 0.5;
     targetSize = normalizedSDNN * (maxSize - minSize) + minSize;
 
-    // Update SDNN text and document title
+    // update current SDNN value and title
     const sdnnValueElement = document.getElementById('sdnn-value');
     if (sdnnValueElement) {
         sdnnValueElement.innerText = avgSDNN.toFixed(2);
@@ -406,6 +387,7 @@ function processSDNN(avgSDNN) {
     console.log(`Updated SDNN: ${avgSDNN} | Normalized: ${normalizedSDNN} | uSize: ${targetSize} | uFlowFieldInfluence: ${updatedFlowFieldInfluence}`);
 }
 
+// change the favicon color based on the normalized SDNN value
 function updateFavicon(normalizedSDNN) {
     const canvas = document.createElement("canvas");
     canvas.width = 64;
@@ -426,17 +408,13 @@ function updateFavicon(normalizedSDNN) {
     favicon.href = faviconUrl;
 }
 
-
+// initial call and interval to fetch average SDNN
 fetchAverageSDNN(10); // initial call
 setInterval(() => fetchAverageSDNN(10), 2000);
 
 
 
-/**
- * Animate
- */
-const clock = new THREE.Clock()
-let previousTime = 0
+
 
 //rotation debug
 debugObject.autoRotate = false;
@@ -480,7 +458,9 @@ gui.add(debugObject, 'toggleFullscreen').name('Toggle Fullscreen');
 
 
 
-
+// used to update based on time instead of per frame so that the displays animation looks same speed across different FPS
+const clock = new THREE.Clock()
+let previousTime = 0
 
 const tick = () => {
     const elapsedTime = clock.getElapsedTime();
