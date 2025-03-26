@@ -1,0 +1,1 @@
+echo call envi\Scripts\activate && python manage.py runserver 0.0.0.0:5555
