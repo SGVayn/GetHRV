@@ -12,7 +12,6 @@ import { RenderPass } from '/static/threejs/js/jsm/postprocessing/RenderPass.js'
 import { UnrealBloomPass } from '/static/threejs/js/jsm/postprocessing/UnrealBloomPass.js';
 
 
-
 // async function to load shaders
 async function loadShader(url) {
     const response = await fetch(url);
