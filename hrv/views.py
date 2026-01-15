@@ -8,9 +8,6 @@ from .models import Measures
 from django.forms.models import model_to_dict
 
 
-
-
-
 ppg_data = deque()
 ppg = []
 measures = {}
@@ -25,7 +22,7 @@ def index(request):
   return HttpResponse("hello HRV")
 
 
-# 接口函数
+
 import sqlite3
 
 ## recieve the data from the watch
@@ -52,7 +49,7 @@ def post(request):
          #print(measures)
 
 
- # 将processed data 存入数据库 （这一步之前在models.py 中创建class） # save the processed data to the database (this step was created in class in models.py)
+
 
          if len(measures):
          #is not empty,saving the data to the database using the 'Measures' model. ##this outputs the mess in chat when successfully saving a new item to the database

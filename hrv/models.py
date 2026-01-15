@@ -44,11 +44,11 @@ class Measures(models.Model):
     hf_nu = models.FloatField(default=-1, null=True)
     timeStamp = models.DateTimeField(default=timezone.now, null=True)
 
-    #Django 的 FloatField 类型对应 SQLite 的 NUMERIC 数据类型
+
 
     class Meta:
         db_table = 'measures'
         verbose_name_plural = "Measures"
-        #将数据库表名定义为measures
+
 
 

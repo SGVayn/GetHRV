@@ -25,7 +25,7 @@ def enqueue(data_queue, data):
         data = json.loads(data)
     data_dict = {"time": data["time"], "event": data["total_event"], "ts": data["time_stamp"],
             "ppg": data["data1"]}
-    #生成数据结构
+
     # print(data['data1'])
     queue = data_queue
     # if len(queue):
@@ -80,5 +80,3 @@ if __name__ == "__main__":
     print(data_queue)
 
 
-    #看能不能把np.save() 能不能存进sqlite
-    #test data不等于输出的
